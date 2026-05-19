@@ -12,6 +12,7 @@ from cli import serve_cmd, tail_cmd
 from cli.anomaly_cmd import app as anomaly_app
 from cli.demo_cmd import app as demo_app
 from cli.errors_cmd import app as errors_app
+from cli.export_cmd import app as export_app
 from cli.findings_cmd import app as findings_app
 from cli.llm_cmd import app as llm_app
 from cli.opensearch_cmd import app as opensearch_app
@@ -30,10 +31,12 @@ from log_analyzer.errors.tracker import ErrorTracker
 from log_analyzer.models import Event, Finding
 from log_analyzer.parsers.detector import FormatDetector
 from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+from log_analyzer.plugins.loader import load_plugins
 from log_analyzer.rules.engine import RuleEngine
 from log_analyzer.rules.loader import load_rules_dir, validate_rule_file
 from log_analyzer.rules.sigma import SigmaConversionError, load_sigma_file
 from log_analyzer.storage.baseline_repo import BaselineRepository
+from log_analyzer.storage.dismiss_repo import DismissRepository
 from log_analyzer.storage.errors_repo import ErrorsRepository
 from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_severity
 
@@ -50,6 +53,7 @@ app.add_typer(findings_app, name="findings")
 app.add_typer(anomaly_app, name="anomaly")
 app.add_typer(llm_app, name="llm")
 app.add_typer(demo_app, name="demo")
+app.add_typer(export_app, name="export")
 
 
 class RedactModeArg(str, Enum):
@@ -151,12 +155,18 @@ def scan(
     redactor = _make_redactor(cfg, _REDACT_MAP[redact])
     use_stdin = path is None or str(path) == "-"
 
-    # Load rules
+    # Load plugins
+    plugin_registry = load_plugins(cfg.plugins_dir)
+
+    # Load rules (built-in + CLI --rules-dir + plugins)
     engine: RuleEngine | None = None
     if not no_rules:
         all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
+        for pdir in plugin_registry.rule_dirs:
+            all_rules.extend(load_rules_dir(pdir))
+        all_rules.extend(plugin_registry.rules)
         engine = RuleEngine(all_rules)
 
     # These lists are populated inside _run() and read afterwards
@@ -242,6 +252,16 @@ def scan(
                     f"  Anomaly  : observe mode ({n_obs}/5 buckets for '{source_key}')"
                     " -- run more scans to train baseline\n"
                 )
+
+    # ------------------------------------------------------------------
+    # Dismiss filter — remove suppressed findings before display/persist
+    # ------------------------------------------------------------------
+    if findings:
+        with DismissRepository(cfg.db_path) as d_repo:
+            findings = [
+                f for f in findings
+                if not d_repo.is_dismissed(f.rule_id, f.source)
+            ]
 
     # ------------------------------------------------------------------
     # Finding persistence (Option B) — only when --track-errors is active

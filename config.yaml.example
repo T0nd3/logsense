@@ -8,6 +8,13 @@ pii_rules_path: pii_rules.yaml
 # Set via env var LOG_ANALYZER_API_TOKEN or here (prefer env var)
 api_token: ""
 
+# Plugin directory — *.py files here are auto-loaded at startup
+# plugins_dir: plugins/
+
+# Finding retention and minimum severity for --track-errors persistence
+# findings_retention_days: 30
+# findings_min_severity: high
+
 llm:
   provider: ollama
   model: gemma3:4b

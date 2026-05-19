@@ -73,6 +73,8 @@ class Config:
     findings_min_severity: str = "high"  # "low" | "medium" | "high" | "critical"
     # REST API auth — None means auth disabled (local dev)
     api_token: str | None = None
+    # Plugin directory — Python files here are auto-loaded at startup
+    plugins_dir: Path | None = None
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:
@@ -113,4 +115,5 @@ class Config:
             findings_retention_days=int(data.get("findings_retention_days", 30)),
             findings_min_severity=data.get("findings_min_severity", "high"),
             api_token=api_token,
+            plugins_dir=Path(data["plugins_dir"]) if data.get("plugins_dir") else None,
         )

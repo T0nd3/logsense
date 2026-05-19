@@ -75,6 +75,11 @@ def _load_one(data: dict, source_file: str) -> Rule:
     )
 
 
+def rule_from_dict(data: dict, source_file: str = "<dict>") -> Rule:
+    """Create a Rule directly from a Python dict (same schema as YAML rule files)."""
+    return _load_one(data, source_file)
+
+
 def load_rule_file(path: Path) -> Rule:
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)

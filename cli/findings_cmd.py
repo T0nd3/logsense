@@ -7,6 +7,7 @@ from typing import Annotated, Optional
 import typer
 
 from log_analyzer.config import Config
+from log_analyzer.storage.dismiss_repo import DismissRepository
 from log_analyzer.storage.findings_repo import FindingsRepository
 
 app = typer.Typer(help="Browse persisted HIGH/CRITICAL findings.")
@@ -38,6 +39,13 @@ def _fmt_ts(ts: str | None) -> str:
 def _open_repo(config_path: Path | None) -> FindingsRepository:
     cfg = Config.load(config_path)
     repo = FindingsRepository(cfg.db_path)
+    repo.open()
+    return repo
+
+
+def _open_dismiss_repo(config_path: Path | None) -> DismissRepository:
+    cfg = Config.load(config_path)
+    repo = DismissRepository(cfg.db_path)
     repo.open()
     return repo
 
@@ -164,3 +172,74 @@ def findings_summary(
             typer.echo(f"  {row['rule_id']:<30} {sev} {row['count']:>5}")
 
     typer.echo(sep)
+
+
+# ---------------------------------------------------------------------------
+# findings dismiss / undismiss / dismissed
+# ---------------------------------------------------------------------------
+
+@app.command("dismiss")
+def findings_dismiss(
+    rule_id: Annotated[str, typer.Argument(help="Rule ID to suppress (e.g. SSH_BRUTE_FORCE).")],
+    source: Annotated[Optional[str], typer.Option("--source", help="Limit to this source file only. Omit to suppress globally.")] = None,
+    reason: Annotated[Optional[str], typer.Option("--reason", "-r", help="Optional reason for the dismissal.")] = None,
+    config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
+) -> None:
+    """Suppress a rule — future findings from this rule will be filtered out.
+
+    Use --source to limit suppression to one log file; omit it to suppress
+    the rule across all sources (global false-positive).
+
+    Examples::
+
+        analyzer findings dismiss SSH_BRUTE_FORCE
+        analyzer findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
+    """
+    with _open_dismiss_repo(config) as repo:
+        added = repo.dismiss(rule_id, source=source, reason=reason)
+
+    scope = f"source '{source}'" if source else "all sources"
+    if added:
+        typer.echo(typer.style(f"  Dismissed: {rule_id} ({scope})", fg=typer.colors.YELLOW))
+    else:
+        typer.echo(f"  Already dismissed: {rule_id} ({scope})")
+
+
+@app.command("undismiss")
+def findings_undismiss(
+    rule_id: Annotated[str, typer.Argument(help="Rule ID to re-enable.")],
+    source: Annotated[Optional[str], typer.Option("--source", help="Remove only the source-specific suppression.")] = None,
+    config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
+) -> None:
+    """Re-enable a previously dismissed rule."""
+    with _open_dismiss_repo(config) as repo:
+        removed = repo.undismiss(rule_id, source=source)
+
+    scope = f"source '{source}'" if source else "all sources"
+    if removed:
+        typer.echo(typer.style(f"  Re-enabled: {rule_id} ({scope})", fg=typer.colors.GREEN))
+    else:
+        typer.echo(f"  Not found: {rule_id} ({scope}) — nothing to remove.")
+
+
+@app.command("dismissed")
+def findings_dismissed(
+    config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
+) -> None:
+    """List all currently dismissed rules."""
+    with _open_dismiss_repo(config) as repo:
+        rows = repo.list_dismissed()
+
+    if not rows:
+        typer.echo("No rules are currently dismissed.")
+        return
+
+    sep = "-" * 65
+    typer.echo(f"\n  {len(rows)} dismissed rule(s)\n")
+    typer.echo(f"  {'RULE ID':<30} {'SCOPE':<22} REASON")
+    typer.echo(f"  {sep}")
+    for r in rows:
+        scope = r["source"] if r["source"] else "(all sources)"
+        reason = r["reason"] or ""
+        typer.echo(f"  {r['rule_id']:<30} {scope:<22} {reason}")
+    typer.echo("")
