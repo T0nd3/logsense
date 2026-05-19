@@ -43,7 +43,8 @@
 | **Sigma support** | Convert Sigma rules to native format |
 | **Anomaly detection** | Statistical Z-score baseline over 60-second buckets, trains automatically from historical logs |
 | **LLM integration** | Ollama (default), Claude, OpenAI-compatible APIs; explain findings, summarize errors, RAG Q&A |
-| **Web dashboard** | FastAPI + HTMX; findings/errors table, trend chart (ECharts), inline LLM explain |
+| **Web dashboard** | FastAPI + HTMX; findings/errors table, trend chart (ECharts), inline LLM explain, log file upload |
+| **Log upload** | Drag-and-drop log upload in the browser — instant scan with PII redaction, results shown inline |
 | **REST API v1** | Bearer-token auth, JSON endpoints for findings, errors, stats, live event ingestion |
 | **OpenSearch** | Query and analyse logs from OpenSearch / Elasticsearch clusters |
 | **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
@@ -481,10 +482,35 @@ analyzer export report --since 24h --severity critical --title "Daily Critical A
 
 ### demo
 
-Guided interactive demo using synthetic log data. Runs through all major features without requiring real logs:
+Interactive demo and database seeding using synthetic data — no real log files, Ollama, or database required for `demo run`.
 
 ```bash
-analyzer demo run
+analyzer demo [run|seed|clear]
+```
+
+#### `demo run`
+
+Guided CLI walkthrough of all 7 feature sections (log parsing, PII, rules, error tracking, findings, anomaly detection, LLM):
+
+```bash
+analyzer demo run           # pause after each section
+analyzer demo run --no-pause  # print everything at once
+```
+
+#### `demo seed`
+
+Populate the SQLite database with synthetic findings and errors so the **web dashboard** has something to display immediately. Inserts 25 findings spread over 14 days (for the trend chart) and 5 error groups. All records are tagged internally and never mixed with real data.
+
+```bash
+analyzer demo seed
+```
+
+#### `demo clear`
+
+Remove every record written by `demo seed`. Real findings and errors are never touched.
+
+```bash
+analyzer demo clear
 ```
 
 ---
@@ -771,6 +797,17 @@ analyzer serve --port 8080
 | `/` | Overview with 14-day trend chart and quick stats |
 | `/findings` | Findings table with severity filter, inline LLM explain |
 | `/errors` | Error group table with frequency and recency sorting |
+| `/upload` | Drag-and-drop log file upload with instant scan results |
+
+### Log file upload
+
+Navigate to `/upload` in the browser to scan any log file without leaving the dashboard:
+
+- **Drag-and-drop** or click to browse — `.log`, `.txt`, `.gz`, `.json`
+- Choose PII mode: **Redact** (pseudonymize), **Mask** (`<TYPE>`), or **Dry-run**
+- Results appear inline (no page reload): stat cards, findings table sorted by severity, 20-event sample
+- **Nothing is persisted** — purely transient analysis; use `analyzer scan --track-errors` to save results
+- Maximum upload size: **10 MB**
 
 ### REST API v1
 
@@ -852,6 +889,20 @@ docker run --rm \
   logsense \
   analyzer scan /logs/syslog --track-errors
 ```
+
+### Demo data for the web dashboard
+
+Seed the database with synthetic findings and errors so the dashboard shows data immediately:
+
+```bash
+# Populate (25 findings over 14 days + 5 error groups)
+docker compose exec logsense analyzer demo seed
+
+# Remove all demo data (real data is untouched)
+docker compose exec logsense analyzer demo clear
+```
+
+Alternatively, upload a real log file via the browser at `http://localhost:8080/upload` for an instant, transient scan.
 
 ---
 
