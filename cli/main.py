@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import gzip
-from enum import Enum
+import re
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 
 from cli import serve_cmd, tail_cmd
+from cli._types import REDACT_MAP, RedactModeArg
 from cli.anomaly_cmd import app as anomaly_app
+from cli.colors import SEVERITY_COLOR
 from cli.demo_cmd import app as demo_app
 from cli.errors_cmd import app as errors_app
 from cli.export_cmd import app as export_app
@@ -30,7 +32,8 @@ from log_analyzer.config import Config
 from log_analyzer.errors.tracker import ErrorTracker
 from log_analyzer.models import Event, Finding
 from log_analyzer.parsers.detector import FormatDetector
-from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+from log_analyzer.pii.patterns import PIIPattern
+from log_analyzer.pii.redactor import PIIRedactor
 from log_analyzer.plugins.loader import load_plugins
 from log_analyzer.rules.engine import RuleEngine
 from log_analyzer.rules.loader import load_rules_dir, validate_rule_file
@@ -56,35 +59,20 @@ app.add_typer(demo_app, name="demo")
 app.add_typer(export_app, name="export")
 
 
-class RedactModeArg(str, Enum):
-    redact = "redact"
-    mask = "mask"
-    dry_run = "dry-run"
-
-
-_REDACT_MAP = {
-    RedactModeArg.redact: RedactMode.REDACT,
-    RedactModeArg.mask: RedactMode.MASK,
-    RedactModeArg.dry_run: RedactMode.DRY_RUN,
-}
-
-_SEVERITY_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
-
-
 def _load_config(config_path: Path | None) -> Config:
     return Config.load(config_path)
 
 
-def _make_redactor(cfg: Config, mode: RedactMode) -> PIIRedactor:
+def _make_redactor(
+    cfg: Config,
+    mode,
+    plugin_pii: list[PIIPattern] | None = None,
+) -> PIIRedactor:
     return PIIRedactor.from_config(
         salt=cfg.pii_salt,
         rules_path=cfg.pii_rules_path,
         mode=mode,
+        additional=plugin_pii,
     )
 
 
@@ -152,11 +140,19 @@ def scan(
 ) -> None:
     """Parse a log file, redact PII, run detection rules, and optionally track errors."""
     cfg = _load_config(config)
-    redactor = _make_redactor(cfg, _REDACT_MAP[redact])
     use_stdin = path is None or str(path) == "-"
 
-    # Load plugins
+    # Load plugins first so their PII patterns are available to the redactor
     plugin_registry = load_plugins(cfg.plugins_dir)
+    plugin_pii = [
+        PIIPattern(
+            name=p["name"],
+            pattern=re.compile(p["pattern"]),
+            prefix=p["prefix"],
+        )
+        for p in plugin_registry.pii_patterns
+    ]
+    redactor = _make_redactor(cfg, REDACT_MAP[redact], plugin_pii=plugin_pii or None)
 
     # Load rules (built-in + CLI --rules-dir + plugins)
     engine: RuleEngine | None = None
@@ -309,7 +305,7 @@ def scan(
     if findings:
         typer.echo(f"\n  Findings ({len(findings)}):\n")
         for finding in findings:
-            color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+            color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
             typer.echo(
                 typer.style(_format_finding(finding), fg=color)
             )
@@ -419,7 +415,7 @@ def rules_list(
     typer.echo(f"\n  {'ID':<30} {'LEVEL':<10} {'TITLE'}")
     typer.echo(f"  {'-'*30} {'-'*10} {'-'*35}")
     for rule in sorted(all_rules, key=lambda r: r.id):
-        color = _SEVERITY_COLOR.get(rule.level.value, typer.colors.WHITE)
+        color = SEVERITY_COLOR.get(rule.level.value, typer.colors.WHITE)
         level_str = typer.style(rule.level.value.upper().ljust(10), fg=color)
         typer.echo(f"  {rule.id:<30} {level_str} {rule.title}")
     typer.echo(f"\n  {len(all_rules)} rule(s) loaded.")

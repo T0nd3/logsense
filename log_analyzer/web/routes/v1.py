@@ -108,9 +108,11 @@ def v1_findings(
     Filter by `severity`, `source`, or `since_hours` (relative to now).
     """
     if since_hours:
-        rows = f_repo.recent_findings(since_hours=since_hours, severity=severity or None)
-        if source:
-            rows = [r for r in rows if dict(r)["source"] == source]
+        rows = f_repo.recent_findings(
+            since_hours=since_hours,
+            severity=severity or None,
+            source=source or None,
+        )
         return [dict(r) for r in rows[:limit]]
     return [
         dict(r)
@@ -124,11 +126,10 @@ def v1_finding(
     f_repo: FindingsRepository = Depends(findings_repo),
 ) -> dict:
     """Return a single finding by its database ID."""
-    for r in f_repo.list_findings(limit=10_000):
-        d = dict(r)
-        if d["id"] == finding_id:
-            return d
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found.")
+    row = f_repo.get_by_id(finding_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found.")
+    return dict(row)
 
 
 # ---------------------------------------------------------------------------

@@ -6,18 +6,12 @@ from typing import Annotated, Optional
 
 import typer
 
+from cli.colors import SEVERITY_COLOR as _SEV_COLOR
 from log_analyzer.config import Config
 from log_analyzer.storage.dismiss_repo import DismissRepository
 from log_analyzer.storage.findings_repo import FindingsRepository
 
 app = typer.Typer(help="Browse persisted HIGH/CRITICAL findings.")
-
-_SEV_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
 
 _UNIT_HOURS = {"s": 1 / 3600, "m": 1 / 60, "h": 1, "d": 24}
 
@@ -103,8 +97,7 @@ def findings_show(
 ) -> None:
     """Show all stored occurrences for a specific rule ID."""
     with _open_repo(config) as repo:
-        rows = repo.list_findings(limit=500)  # fetch enough to filter
-        rows = [r for r in rows if r["rule_id"] == rule_id][:limit]
+        rows = repo.get_by_rule(rule_id, limit=limit)
 
     if not rows:
         typer.echo(f"No findings stored for rule '{rule_id}'.", err=True)

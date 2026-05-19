@@ -121,10 +121,30 @@ class FindingsRepository:
         params.append(limit)
         return self._conn.execute(query, params).fetchall()
 
+    def get_by_id(self, finding_id: int) -> sqlite3.Row | None:
+        """Return a single finding by primary-key ID, or None if not found."""
+        assert self._conn
+        return self._conn.execute(
+            "SELECT * FROM findings WHERE id = ?", (finding_id,)
+        ).fetchone()
+
+    def get_by_rule(
+        self,
+        rule_id: str,
+        limit: int = 100,
+    ) -> list[sqlite3.Row]:
+        """Return all occurrences for a given rule ID, newest first."""
+        assert self._conn
+        return self._conn.execute(
+            "SELECT * FROM findings WHERE rule_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+            (rule_id, limit),
+        ).fetchall()
+
     def recent_findings(
         self,
         since_hours: int = 24,
         severity: str | None = None,
+        source: str | None = None,
     ) -> list[sqlite3.Row]:
         """Findings created within the last *since_hours* hours."""
         assert self._conn
@@ -136,6 +156,9 @@ class FindingsRepository:
         if severity:
             query += " AND severity = ?"
             params.append(severity)
+        if source:
+            query += " AND source = ?"
+            params.append(source)
         query += " ORDER BY created_at DESC"
         return self._conn.execute(query, params).fetchall()
 

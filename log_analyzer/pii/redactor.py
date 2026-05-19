@@ -36,7 +36,13 @@ class PIIRedactor:
         self.mode = mode
 
     @classmethod
-    def from_config(cls, salt: str, rules_path: Path, mode: RedactMode = RedactMode.REDACT) -> PIIRedactor:
+    def from_config(
+        cls,
+        salt: str,
+        rules_path: Path,
+        mode: RedactMode = RedactMode.REDACT,
+        additional: list[PIIPattern] | None = None,
+    ) -> PIIRedactor:
         extra: list[PIIPattern] = []
         if rules_path.exists():
             with open(rules_path) as f:
@@ -47,7 +53,9 @@ class PIIRedactor:
                     pattern=re.compile(rule["pattern"]),
                     prefix=rule.get("prefix", rule["name"]),
                 ))
-        return cls(salt=salt, extra_patterns=extra, mode=mode)
+        if additional:
+            extra.extend(additional)
+        return cls(salt=salt, extra_patterns=extra or None, mode=mode)
 
     def redact(self, text: str) -> RedactionResult:
         hits: list[tuple[str, str]] = []

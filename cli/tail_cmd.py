@@ -8,44 +8,29 @@ webhook alerts.  Runs until the user presses Ctrl+C.
 from __future__ import annotations
 
 import asyncio
-from enum import Enum
+import re
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 
+from cli._types import REDACT_MAP, RedactModeArg
+from cli.colors import SEVERITY_COLOR
 from log_analyzer.adapters.tail import TailAdapter
 from log_analyzer.config import Config
 from log_analyzer.errors.tracker import ErrorTracker
 from log_analyzer.models import Finding
-from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+from log_analyzer.pii.patterns import PIIPattern
+from log_analyzer.pii.redactor import PIIRedactor
+from log_analyzer.plugins.loader import load_plugins
 from log_analyzer.rules.engine import RuleEngine
 from log_analyzer.rules.loader import load_rules_dir
+from log_analyzer.storage.dismiss_repo import DismissRepository
 from log_analyzer.storage.errors_repo import ErrorsRepository
 from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_severity
 from log_analyzer.tail_helpers import meets_alert_severity, post_webhook
 
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "builtin"
-
-_SEVERITY_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
-
-
-class _RedactModeArg(str, Enum):
-    redact = "redact"
-    mask = "mask"
-    dry_run = "dry-run"
-
-
-_REDACT_MAP = {
-    _RedactModeArg.redact: RedactMode.REDACT,
-    _RedactModeArg.mask: RedactMode.MASK,
-    _RedactModeArg.dry_run: RedactMode.DRY_RUN,
-}
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +40,7 @@ _REDACT_MAP = {
 def tail_watch(
     path: Annotated[Path, typer.Argument(help="Log file to watch.")],
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
-    redact: Annotated[_RedactModeArg, typer.Option("--redact")] = _RedactModeArg.redact,
+    redact: Annotated[RedactModeArg, typer.Option("--redact")] = RedactModeArg.redact,
     from_start: Annotated[
         bool, typer.Option("--from-start", help="Read from beginning instead of end.")
     ] = False,
@@ -92,10 +77,22 @@ def tail_watch(
         raise typer.Exit(1)
 
     cfg = Config.load(config)
+
+    # Load plugins first (PII patterns + rules)
+    plugin_registry = load_plugins(cfg.plugins_dir)
+    plugin_pii = [
+        PIIPattern(
+            name=p["name"],
+            pattern=re.compile(p["pattern"]),
+            prefix=p["prefix"],
+        )
+        for p in plugin_registry.pii_patterns
+    ]
     redactor = PIIRedactor.from_config(
         salt=cfg.pii_salt,
         rules_path=cfg.pii_rules_path,
-        mode=_REDACT_MAP[redact],
+        mode=REDACT_MAP[redact],
+        additional=plugin_pii or None,
     )
 
     engine: RuleEngine | None = None
@@ -103,6 +100,9 @@ def tail_watch(
         all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
+        for pdir in plugin_registry.rule_dirs:
+            all_rules.extend(load_rules_dir(pdir))
+        all_rules.extend(plugin_registry.rules)
         engine = RuleEngine(all_rules)
 
     adapter = TailAdapter(path, from_start=from_start, poll_interval=poll_interval)
@@ -133,6 +133,7 @@ def tail_watch(
         e_repo: ErrorsRepository | None = None
         tracker: ErrorTracker | None = None
         f_repo: FindingsRepository | None = None
+        d_repo: DismissRepository | None = None
 
         if track_errors:
             e_repo = ErrorsRepository(cfg.db_path)
@@ -141,6 +142,9 @@ def tail_watch(
         if track_findings:
             f_repo = FindingsRepository(cfg.db_path)
             f_repo.open()
+        if engine:
+            d_repo = DismissRepository(cfg.db_path)
+            d_repo.open()
 
         try:
             async for event in adapter.events():
@@ -151,9 +155,13 @@ def tail_watch(
                 counts["pii"] += len(result.hits)
                 counts["events"] += 1
 
-                # Rule engine
+                # Rule engine + dismiss filter
                 if engine:
                     for finding in engine.process(event):
+                        # Skip suppressed rules
+                        if d_repo and d_repo.is_dismissed(finding.rule_id, finding.source):
+                            continue
+
                         _print_finding(finding)
                         counts["findings"] += 1
 
@@ -177,6 +185,8 @@ def tail_watch(
                 e_repo.close()
             if f_repo:
                 f_repo.close()
+            if d_repo:
+                d_repo.close()
 
     try:
         asyncio.run(_run())
@@ -203,6 +213,6 @@ def tail_watch(
 def _print_finding(finding: Finding) -> None:
     ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     sev = finding.severity.value
-    color = _SEVERITY_COLOR.get(sev, typer.colors.WHITE)
+    color = SEVERITY_COLOR.get(sev, typer.colors.WHITE)
     line = f"  [{sev.upper()}] {ts}  {finding.rule_id}  {finding.message}"
     typer.echo(typer.style(line, fg=color))

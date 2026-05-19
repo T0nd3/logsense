@@ -16,11 +16,19 @@ _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # type: ignore[type-arg]
-    """Load rule engine once at startup; nothing to teardown."""
+    """Load rule engine (built-in + plugins) once at startup; nothing to teardown."""
+    from log_analyzer.plugins.loader import load_plugins
     from log_analyzer.rules.engine import RuleEngine
     from log_analyzer.rules.loader import load_rules_dir
 
+    cfg: Config = app.state.config
     rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+
+    plugin_registry = load_plugins(cfg.plugins_dir)
+    for pdir in plugin_registry.rule_dirs:
+        rules.extend(load_rules_dir(pdir))
+    rules.extend(plugin_registry.rules)
+
     app.state.rule_engine = RuleEngine(rules)
     yield
 
