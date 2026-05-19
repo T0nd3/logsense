@@ -1,0 +1,63 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Test & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Linter cache
+.ruff_cache/
+
+# Runtime artifacts (never bake into image)
+*.db
+*.db-shm
+*.db-wal
+chroma_index/
+log_analyzer.db
+
+# Secrets
+config.yaml
+config.local.yaml
+pii_rules_local.yaml
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+.claude/
+
+# Logs
+*.log
+*.log.*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Tests (not needed at runtime)
+tests/
+
+# Docs
+*.md

@@ -1,0 +1,29 @@
+services:
+  logsense:
+    build: .
+    image: logsense:latest
+    container_name: logsense
+    restart: unless-stopped
+    ports:
+      - "${LOGSENSE_PORT:-8080}:8080"
+    volumes:
+      # Persistent SQLite database
+      - logsense-data:/data
+      # Optional: mount your config.yaml (copy config.yaml.example first)
+      # - ./config.yaml:/app/config.yaml:ro
+    environment:
+      # Bearer token for REST API (leave empty to disable auth)
+      - LOG_ANALYZER_API_TOKEN=${LOG_ANALYZER_API_TOKEN:-}
+      # PII salt for pseudonymization (set a random secret)
+      - LOG_ANALYZER_PII_SALT=${LOG_ANALYZER_PII_SALT:-}
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  logsense-data:
+    driver: local

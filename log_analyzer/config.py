@@ -71,6 +71,8 @@ class Config:
     # Finding persistence (Option B)
     findings_retention_days: int = 30   # auto-cleanup older than N days
     findings_min_severity: str = "high"  # "low" | "medium" | "high" | "critical"
+    # REST API auth — None means auth disabled (local dev)
+    api_token: str | None = None
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:
@@ -96,6 +98,12 @@ class Config:
             or data.get("pii_salt", "")
         )
 
+        api_token = (
+            os.environ.get("LOG_ANALYZER_API_TOKEN")
+            or data.get("api_token")
+            or None
+        )
+
         return cls(
             llm=llm,
             opensearch=OpenSearchConfig.from_dict(data.get("opensearch", {})),
@@ -104,4 +112,5 @@ class Config:
             pii_salt=salt,
             findings_retention_days=int(data.get("findings_retention_days", 30)),
             findings_min_severity=data.get("findings_min_severity", "high"),
+            api_token=api_token,
         )

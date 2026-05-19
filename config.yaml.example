@@ -1,8 +1,12 @@
-# Log-Analyzer config example — copy to config.yaml and adapt
+# Log-Analyzer / LogSense config example — copy to config.yaml and adapt
 
 pii_salt: ""           # set here or via LOG_ANALYZER_PII_SALT env var
-db_path: log_analyzer.db
+db_path: log_analyzer.db  # use /data/log_analyzer.db inside Docker
 pii_rules_path: pii_rules.yaml
+
+# REST API auth — leave empty to disable (local dev / Docker with firewall)
+# Set via env var LOG_ANALYZER_API_TOKEN or here (prefer env var)
+api_token: ""
 
 llm:
   provider: ollama
