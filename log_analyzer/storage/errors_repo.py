@@ -163,6 +163,22 @@ class ErrorsRepository:
             (old_cutoff, recent_cutoff),
         ).fetchall()
 
+    def daily_occurrences(self, days: int = 14) -> list[dict]:
+        """Return daily error occurrence counts for the last *days* days."""
+        assert self._conn
+        cutoff = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
+        rows = self._conn.execute(
+            """
+            SELECT date(timestamp) AS day, COUNT(*) AS count
+              FROM error_occurrences
+             WHERE timestamp >= ?
+             GROUP BY day
+             ORDER BY day
+            """,
+            (cutoff,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def summary(self) -> dict:
         assert self._conn
         row = self._conn.execute(

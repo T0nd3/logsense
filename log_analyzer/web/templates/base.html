@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}LogSense{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    /* ── reset ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── design tokens ──────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0f1117;
+      --surface:     #1a1d27;
+      --surface-2:   #242838;
+      --border:      #2d3148;
+      --text:        #e2e8f0;
+      --text-muted:  #94a3b8;
+      --accent:      #6366f1;
+      --accent-h:    #818cf8;
+      --critical:    #ef4444;
+      --high:        #f97316;
+      --medium:      #eab308;
+      --low:         #22c55e;
+      --info:        #94a3b8;
+      --radius:      8px;
+    }
+
+    /* ── base ───────────────────────────────────────────────────────────── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-h); }
+    code { font-family: ui-monospace, "Cascadia Code", monospace; font-size: 12px; }
+
+    /* ── nav ────────────────────────────────────────────────────────────── */
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 24px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .nav-brand span { color: var(--accent); }
+    .nav-link {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .nav-link:hover { color: var(--text); }
+    .nav-link.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* ── layout ─────────────────────────────────────────────────────────── */
+    .container { max-width: 1440px; margin: 0 auto; padding: 28px 24px; }
+    .page-title { font-size: 20px; font-weight: 600; margin-bottom: 22px; }
+
+    /* ── stat cards ─────────────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stat-value { font-size: 30px; font-weight: 700; }
+    .stat-value.c-accent    { color: var(--accent); }
+    .stat-value.c-critical  { color: var(--critical); }
+    .stat-value.c-high      { color: var(--high); }
+    .stat-delta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── card / table-card ──────────────────────────────────────────────── */
+    .card, .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    .card { padding: 20px; }
+    .card-header, .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title, .table-title { font-size: 14px; font-weight: 600; }
+
+    /* ── tables ─────────────────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface-2); }
+    .td-empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 36px 14px;
+      font-size: 13px;
+    }
+
+    /* ── severity badges ────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .badge-critical { background: rgba(239,68,68,.15);   color: var(--critical); }
+    .badge-high     { background: rgba(249,115,22,.15);  color: var(--high); }
+    .badge-medium   { background: rgba(234,179,8,.15);   color: var(--medium); }
+    .badge-low      { background: rgba(34,197,94,.15);   color: var(--low); }
+    .badge-info, .badge-debug { background: rgba(148,163,184,.12); color: var(--info); }
+    .badge-error    { background: rgba(239,68,68,.15);   color: var(--critical); }
+    .badge-warning  { background: rgba(249,115,22,.15);  color: var(--high); }
+
+    /* ── filter bar ─────────────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    select, input[type="text"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input[type="text"]:focus { border-color: var(--accent); }
+    select option { background: var(--surface-2); }
+
+    /* ── buttons ────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-h); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+    /* ── grid helpers ───────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 22px; margin-bottom: 22px; }
+
+    /* ── chart ──────────────────────────────────────────────────────────── */
+    .chart-wrap { height: 260px; }
+
+    /* ── utility ────────────────────────────────────────────────────────── */
+    .mono { font-family: ui-monospace, "Cascadia Code", monospace; font-size: 12px; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+    .nowrap { white-space: nowrap; }
+
+    /* ── LLM explain box ─────────────────────────────────────────────────  */
+    .explain-box {
+      background: var(--surface-2);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 12px 14px;
+      margin: 4px 0 8px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .explain-error { border-left-color: var(--critical); color: var(--critical); }
+
+    /* ── HTMX loading indicator ─────────────────────────────────────────── */
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline-flex; align-items: center; }
+
+    /* ── spinner ────────────────────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── responsive ─────────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .truncate { max-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">&#9632;&nbsp;<span>Log</span>Sense</span>
+    <a href="/"         class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+    <a href="/findings" class="nav-link {% if active_page == 'findings'  %}active{% endif %}">Findings</a>
+    <a href="/errors"   class="nav-link {% if active_page == 'errors'    %}active{% endif %}">Errors</a>
+  </nav>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

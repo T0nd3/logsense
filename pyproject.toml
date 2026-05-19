@@ -18,6 +18,12 @@ evtx = ["python-evtx>=0.7"]
 opensearch = ["opensearch-py>=2.6"]
 claude = ["anthropic>=0.40"]
 embed = ["chromadb>=0.5"]
+web = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -30,6 +36,7 @@ analyzer = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["log_analyzer", "cli"]
+artifacts = ["log_analyzer/web/templates/**"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

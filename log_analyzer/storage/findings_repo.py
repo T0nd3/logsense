@@ -153,6 +153,22 @@ class FindingsRepository:
             (limit,),
         ).fetchall()
 
+    def daily_counts(self, days: int = 14) -> list[dict]:
+        """Return daily finding counts grouped by severity for the last *days* days."""
+        assert self._conn
+        cutoff = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
+        rows = self._conn.execute(
+            """
+            SELECT date(created_at) AS day, severity, COUNT(*) AS count
+              FROM findings
+             WHERE created_at >= ?
+             GROUP BY day, severity
+             ORDER BY day
+            """,
+            (cutoff,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def summary(self) -> dict:
         assert self._conn
         row = self._conn.execute("SELECT COUNT(*) AS total FROM findings").fetchone()

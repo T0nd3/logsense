@@ -1,0 +1,16 @@
+{% for r in rows %}
+<tr>
+  <td class="mono truncate" style="max-width:180px">{{ r.error_type }}</td>
+  <td><span class="badge badge-{{ r.severity }}">{{ r.severity }}</span></td>
+  <td style="text-align:right;font-weight:600">{{ r.count }}</td>
+  <td class="mono nowrap">{{ r.first_seen[:16] }}</td>
+  <td class="mono nowrap">{{ r.last_seen[:16] }}</td>
+  <td class="truncate" style="max-width:360px;color:var(--text-muted)">{{ r.normalized_msg }}</td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="6" class="td-empty">
+    No errors tracked yet — run <code>analyzer scan --track-errors &lt;logfile&gt;</code>
+  </td>
+</tr>
+{% endfor %}

@@ -1,0 +1,5 @@
+{% if error %}
+<div class="explain-box explain-error">LLM error: {{ error }}</div>
+{% elif explanation %}
+<div class="explain-box">{{ explanation }}</div>
+{% endif %}

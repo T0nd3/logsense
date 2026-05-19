@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Errors — LogSense{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Errors</h1>
+
+<!-- ── filter bar ─────────────────────────────────────────────────────── -->
+<form class="filter-bar"
+      hx-get="/api/errors"
+      hx-trigger="change"
+      hx-target="#errors-body"
+      hx-indicator="#errors-loading">
+
+  <select name="severity">
+    <option value="">All severities</option>
+    <option value="critical">Critical</option>
+    <option value="error">Error</option>
+    <option value="warning">Warning</option>
+    <option value="info">Info</option>
+  </select>
+
+  <select name="sort">
+    <option value="last_seen">Sort: last seen</option>
+    <option value="count">Sort: count (desc)</option>
+    <option value="first_seen">Sort: first seen</option>
+  </select>
+
+  <span id="errors-loading" class="htmx-indicator" style="margin-left:6px">
+    <span class="spinner"></span>
+  </span>
+</form>
+
+<!-- ── errors table ───────────────────────────────────────────────────── -->
+<div class="table-card">
+  <div class="table-header">
+    <span class="table-title">Error Groups</span>
+    <span style="color:var(--text-muted);font-size:12px">{{ total }} patterns</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Severity</th>
+        <th style="text-align:right">Count</th>
+        <th class="nowrap">First seen</th>
+        <th class="nowrap">Last seen</th>
+        <th>Normalized message</th>
+      </tr>
+    </thead>
+    <tbody id="errors-body">
+      {% include "partials/errors_rows.html" %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

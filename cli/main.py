@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from cli import tail_cmd
+from cli import serve_cmd, tail_cmd
 from cli.anomaly_cmd import app as anomaly_app
 from cli.demo_cmd import app as demo_app
 from cli.errors_cmd import app as errors_app
@@ -41,6 +41,7 @@ _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "
 
 app = typer.Typer(name="analyzer", help="Local log analyzer with LLM support.")
 app.command("tail")(tail_cmd.tail_watch)
+app.command("serve")(serve_cmd.serve)
 rules_app = typer.Typer(help="Manage detection rules.")
 app.add_typer(rules_app, name="rules")
 app.add_typer(opensearch_app, name="opensearch")

@@ -1,0 +1,33 @@
+{% for r in rows %}
+<tr>
+  <td class="mono nowrap">{{ r.created_at[:16] }}</td>
+  <td class="mono">{{ r.rule_id }}</td>
+  <td><span class="badge badge-{{ r.severity }}">{{ r.severity }}</span></td>
+  <td class="mono truncate">{{ r.source }}</td>
+  <td class="truncate">{{ r.message }}</td>
+  <td>
+    <form hx-post="/api/explain"
+          hx-target="#explain-{{ r.id }}"
+          hx-swap="innerHTML"
+          hx-indicator="#spin-{{ r.id }}">
+      <input type="hidden" name="rule_id"  value="{{ r.rule_id }}">
+      <input type="hidden" name="severity" value="{{ r.severity }}">
+      <input type="hidden" name="message"  value="{{ r.message | e }}">
+      <input type="hidden" name="source"   value="{{ r.source }}">
+      <button type="submit" class="btn btn-sm btn-ghost">Explain</button>
+      <span id="spin-{{ r.id }}" class="htmx-indicator"><span class="spinner"></span></span>
+    </form>
+  </td>
+</tr>
+<tr style="background:var(--bg)">
+  <td colspan="6" style="padding:0 14px">
+    <div id="explain-{{ r.id }}"></div>
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="6" class="td-empty">
+    No findings match the current filters.
+  </td>
+</tr>
+{% endfor %}
