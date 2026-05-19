@@ -1,0 +1,911 @@
+# LogSense
+
+**Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [CLI Reference](#cli-reference)
+  - [scan](#scan)
+  - [tail](#tail)
+  - [serve](#serve)
+  - [findings](#findings)
+  - [errors](#errors)
+  - [rules](#rules)
+  - [anomaly](#anomaly)
+  - [llm](#llm)
+  - [opensearch](#opensearch)
+  - [export](#export)
+  - [demo](#demo)
+- [Configuration](#configuration)
+- [PII Redaction](#pii-redaction)
+- [Detection Rules](#detection-rules)
+- [Plugin System](#plugin-system)
+- [Anomaly Detection](#anomaly-detection)
+- [LLM Integration](#llm-integration)
+- [Web Dashboard & REST API](#web-dashboard--rest-api)
+- [Docker](#docker)
+- [Contributing](#contributing)
+
+---
+
+## Features
+
+| Capability | Details |
+|---|---|
+| **Format support** | Syslog, Nginx access/error, JSON Lines, Windows Event Log (EVTX), plaintext — auto-detected |
+| **PII redaction** | Emails, IPs, credit cards, phone numbers, UUIDs, JWTs, SSH keys — deterministic pseudonymisation or masking |
+| **Rule engine** | YAML-based rules with `contains`, `regex`, `startswith`, `endswith`, `gte`, `lte` operators; multi-field AND/OR |
+| **Sigma support** | Convert Sigma rules to native format |
+| **Anomaly detection** | Statistical Z-score baseline over 60-second buckets, trains automatically from historical logs |
+| **LLM integration** | Ollama (default), Claude, OpenAI-compatible APIs; explain findings, summarize errors, RAG Q&A |
+| **Web dashboard** | FastAPI + HTMX; findings/errors table, trend chart (ECharts), inline LLM explain |
+| **REST API v1** | Bearer-token auth, JSON endpoints for findings, errors, stats, live event ingestion |
+| **OpenSearch** | Query and analyse logs from OpenSearch / Elasticsearch clusters |
+| **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
+| **FP suppression** | Dismiss rules globally or per source file; reversible |
+| **Markdown export** | Automated security reports from the SQLite database |
+| **Plugin system** | Drop Python files into a directory to add custom rules and PII patterns |
+| **Docker** | Multi-stage image, non-root user, `/data` volume — production-ready |
+
+---
+
+## Quick Start
+
+```bash
+# Install (core only — no external dependencies beyond PyYAML and typer)
+pip install .
+
+# Scan a log file
+analyzer scan /var/log/syslog
+
+# Watch a file in real time
+analyzer tail /var/log/nginx/access.log
+
+# Start the web dashboard
+pip install '.[web]'
+analyzer serve
+```
+
+That's it. Open `http://localhost:8080` in your browser.
+
+---
+
+## Installation
+
+**Requirements:** Python 3.11+
+
+### Core only
+
+```bash
+pip install .
+```
+
+Includes: file scanning, PII redaction, rule engine, anomaly detection, findings persistence, Markdown export, plugin system.
+
+### Optional feature sets
+
+```bash
+pip install '.[web]'         # web dashboard + REST API (FastAPI, uvicorn, Jinja2)
+pip install '.[opensearch]'  # OpenSearch / Elasticsearch integration
+pip install '.[evtx]'        # Windows Event Log (.evtx) support
+pip install '.[claude]'      # Anthropic Claude API
+pip install '.[embed]'       # ChromaDB for RAG (llm ask command)
+```
+
+Install everything:
+
+```bash
+pip install '.[web,opensearch,evtx,claude,embed]'
+```
+
+### Shell auto-completion
+
+```bash
+analyzer --install-completion    # bash / zsh / fish / PowerShell
+```
+
+---
+
+## CLI Reference
+
+All commands accept `--config/-c <path>` to specify a config file. Defaults to `config.yaml` in the working directory.
+
+---
+
+### scan
+
+Parse a log file (or stdin), redact PII, run detection rules, and optionally persist errors and findings.
+
+```bash
+analyzer scan [OPTIONS] [PATH]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `PATH` | stdin | Log file to scan. Use `-` explicitly for stdin. |
+| `--config/-c` | `config.yaml` | Config file path. |
+| `--redact` | `redact` | PII handling: `redact` (hash), `mask` (`<TYPE>`), `dry-run` (show only). |
+| `--limit/-n` | `50` | Max events to display in output. |
+| `--all` | off | Display all events (ignores `--limit`). |
+| `--format-only` | off | Print detection summary and exit, skip event listing. |
+| `--no-rules` | off | Skip the rule engine entirely. |
+| `--rules-dir` | — | Additional YAML rules directory. |
+| `--track-errors` | off | Persist error groups and HIGH/CRITICAL findings to SQLite. |
+| `--detect-anomalies` | off | Run statistical anomaly detection against the trained baseline. |
+| `--anomaly-source` | file stem | Override the baseline source key. |
+| `--anomaly-threshold` | `3.0` | Z-score threshold for anomaly alerts. |
+| `--explain-findings` | off | Ask the LLM to explain up to 3 HIGH/CRITICAL findings. |
+| `--classify` | off | Ask the LLM to classify a sample of events by severity. |
+
+**Examples**
+
+```bash
+# Basic scan with PII masking
+analyzer scan /var/log/auth.log --redact mask
+
+# Scan a gzip-compressed file and persist results
+analyzer scan /var/log/nginx/access.log.gz --track-errors
+
+# Read from stdin (e.g. pipe from journalctl)
+journalctl -n 1000 | analyzer scan -
+
+# Scan with anomaly detection after training the baseline
+analyzer anomaly learn /var/log/syslog --source syslog
+analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+
+# Explain the worst findings with Ollama
+analyzer scan /var/log/auth.log --track-errors --explain-findings
+```
+
+---
+
+### tail
+
+Watch a log file for new lines in real time. Applies PII redaction and detection rules to every incoming event. Press **Ctrl+C** to stop.
+
+```bash
+analyzer tail [OPTIONS] PATH
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `PATH` | — | Log file to watch (required). |
+| `--redact` | `redact` | PII mode: `redact`, `mask`, `dry-run`. |
+| `--from-start` | off | Start from the beginning of the file instead of the tail. |
+| `--no-rules` | off | Skip rule engine. |
+| `--rules-dir` | — | Extra rules directory. |
+| `--track-errors` | off | Persist new errors to SQLite. |
+| `--track-findings` | off | Persist HIGH/CRITICAL findings to SQLite. |
+| `--alert-webhook` | — | POST findings as JSON to this URL. |
+| `--alert-min-severity` | `high` | Minimum severity for webhook: `low` \| `medium` \| `high` \| `critical`. |
+| `--poll-interval` | `0.2` | File poll interval in seconds. |
+
+Dismissed rules (see [`findings dismiss`](#findings)) are filtered out in real time — no spurious alerts for known false positives.
+
+**Examples**
+
+```bash
+# Watch nginx access log and send critical findings to a webhook
+analyzer tail /var/log/nginx/access.log \
+  --track-findings \
+  --alert-webhook https://hooks.example.com/security \
+  --alert-min-severity high
+
+# Read from the beginning and don't bother persisting
+analyzer tail /var/log/auth.log --from-start --no-rules
+```
+
+---
+
+### serve
+
+Start the LogSense web dashboard (requires `pip install '.[web]'`).
+
+```bash
+analyzer serve [OPTIONS]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--host` | `127.0.0.1` | Bind address. Use `0.0.0.0` to expose on all interfaces. |
+| `--port/-p` | `8080` | Port to listen on. |
+| `--config/-c` | `config.yaml` | Config file. |
+| `--reload` | off | Auto-reload on source file changes (development mode). |
+
+```bash
+analyzer serve --port 9090
+```
+
+Open `http://localhost:8080` to access the dashboard, or `http://localhost:8080/api/docs` for the interactive REST API documentation.
+
+---
+
+### findings
+
+Browse and manage HIGH/CRITICAL findings persisted by `scan --track-errors` or `tail --track-findings`.
+
+```bash
+analyzer findings [list|show|summary|dismiss|undismiss|dismissed]
+```
+
+#### `findings list`
+
+```bash
+analyzer findings list [--severity high] [--source nginx.log] [--since 7d] [-n 100]
+```
+
+`--since` accepts `s`, `m`, `h`, `d` suffixes: `30m`, `24h`, `7d`, `30d`.
+
+#### `findings show <RULE_ID>`
+
+Show all stored occurrences for a specific rule:
+
+```bash
+analyzer findings show SSH_BRUTE_FORCE
+analyzer findings show SSH_BRUTE_FORCE -n 50
+```
+
+#### `findings summary`
+
+Print counts by severity and the top 10 rules:
+
+```bash
+analyzer findings summary
+```
+
+#### `findings dismiss <RULE_ID>`
+
+Suppress a rule so future scans and tail sessions skip it:
+
+```bash
+# Global false-positive — suppress everywhere
+analyzer findings dismiss SSH_BRUTE_FORCE --reason "internal bastion host"
+
+# Suppress only for one source file
+analyzer findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
+```
+
+#### `findings undismiss <RULE_ID>`
+
+Re-enable a suppressed rule:
+
+```bash
+analyzer findings undismiss SSH_BRUTE_FORCE
+```
+
+#### `findings dismissed`
+
+List all currently active suppressions:
+
+```bash
+analyzer findings dismissed
+```
+
+---
+
+### errors
+
+Browse deduplicated error groups tracked by `scan --track-errors`.
+
+```bash
+analyzer errors [list|show|new|regression]
+```
+
+#### `errors list`
+
+```bash
+analyzer errors list [--sort last_seen|count|first_seen] [--severity error] [-n 50]
+```
+
+#### `errors show <FINGERPRINT>`
+
+Show details and the 20 most recent occurrences for an error fingerprint:
+
+```bash
+analyzer errors show abc123def456
+```
+
+#### `errors new`
+
+Show errors first seen within a time window — useful for catching regressions after a deploy:
+
+```bash
+analyzer errors new --since 1h
+```
+
+#### `errors regression`
+
+Show errors that reappeared after a silence period:
+
+```bash
+analyzer errors regression --silence 24h
+```
+
+---
+
+### rules
+
+Manage and validate detection rules.
+
+```bash
+analyzer rules list [--rules-dir ./my-rules]
+
+analyzer rules validate my_rule.yml
+analyzer rules validate sigma_rule.yml --sigma
+```
+
+---
+
+### anomaly
+
+Train and manage the statistical anomaly detection baseline.
+
+```bash
+analyzer anomaly [learn|status|reset]
+```
+
+#### `anomaly learn`
+
+Feed a log file into the baseline. Run this several times on representative logs. At least **5 time buckets** are needed before the baseline is considered trained.
+
+```bash
+analyzer anomaly learn /var/log/syslog --source syslog
+analyzer anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
+```
+
+#### `anomaly status`
+
+Show baseline training state for all known source keys:
+
+```bash
+analyzer anomaly status
+```
+
+#### `anomaly reset`
+
+Delete baseline data for one source key or all sources:
+
+```bash
+analyzer anomaly reset --source syslog
+analyzer anomaly reset --all
+```
+
+Once the baseline is trained, enable detection during scan:
+
+```bash
+analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anomaly-threshold 2.5
+```
+
+---
+
+### llm
+
+LLM-powered log analysis. Supports **Ollama** (default, local), **Claude** (Anthropic), and any **OpenAI-compatible** API.
+
+```bash
+analyzer llm [info|explain|summarize|ask|index]
+```
+
+#### `llm info`
+
+Check provider connectivity and list available models:
+
+```bash
+analyzer llm info
+```
+
+#### `llm explain <FINGERPRINT>`
+
+Explain a tracked error in plain language:
+
+```bash
+analyzer llm explain abc123def456
+```
+
+#### `llm summarize`
+
+Generate a natural-language summary of recent errors:
+
+```bash
+analyzer llm summarize --since 24h
+```
+
+#### `llm ask <QUESTION>`
+
+Ask questions about your findings and errors using RAG over the local SQLite database:
+
+```bash
+# Build the vector index first (requires pip install '.[embed]')
+analyzer llm index
+
+# Then ask freely
+analyzer llm ask "What are the most critical security issues from the past week?"
+analyzer llm ask "Which source files had the most brute-force attempts?"
+```
+
+> **Privacy note:** LLM queries use *redacted* log data. When using a cloud provider (Claude, OpenAI), a warning is shown before any data is sent.
+
+---
+
+### opensearch
+
+Query and analyse logs from an OpenSearch or Elasticsearch cluster.
+
+```bash
+analyzer opensearch scan [OPTIONS]
+analyzer opensearch info
+```
+
+Configure the connection in `config.yaml` under the `opensearch:` key (see [Configuration](#configuration)). Credentials can be set via environment variables to avoid storing them in the config file.
+
+```bash
+# Check cluster connectivity
+analyzer opensearch info
+
+# Run detection rules on the last 2 hours of logs
+analyzer opensearch scan --index "logstash-*" --since 2h --track-errors
+```
+
+---
+
+### export
+
+Generate reports from the SQLite database.
+
+```bash
+analyzer export report [OPTIONS]
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `--output/-o` | `report.md` | Output file path. |
+| `--since` | `168h` (7 days) | Look-back window: `24h`, `7d`, `30d`, etc. |
+| `--severity` | all | Minimum severity filter. |
+| `--title` | `LogSense Security Report` | Report title. |
+| `--open` | off | Open the report in the system default app after writing. |
+
+```bash
+# Weekly security report
+analyzer export report --since 7d --output weekly.md --open
+
+# Critical-only daily report
+analyzer export report --since 24h --severity critical --title "Daily Critical Alerts"
+```
+
+---
+
+### demo
+
+Guided interactive demo using synthetic log data. Runs through all major features without requiring real logs:
+
+```bash
+analyzer demo run
+```
+
+---
+
+## Configuration
+
+Copy `config.yaml.example` to `config.yaml` and adapt:
+
+```yaml
+# SQLite database for findings, errors, and baselines
+db_path: log_analyzer.db        # use /data/log_analyzer.db inside Docker
+
+# Custom PII patterns file (optional)
+pii_rules_path: pii_rules.yaml
+
+# Salt for deterministic PII pseudonymisation
+# Prefer env var LOG_ANALYZER_PII_SALT over storing here
+pii_salt: ""
+
+# REST API Bearer token — leave empty to disable auth (local dev)
+# Prefer env var LOG_ANALYZER_API_TOKEN
+api_token: ""
+
+# Plugin directory — all *.py files here are auto-loaded at startup
+# plugins_dir: plugins/
+
+# Findings persistence behaviour
+# findings_retention_days: 30
+# findings_min_severity: high   # low | medium | high | critical
+
+llm:
+  provider: ollama              # ollama | claude | openai
+  model: gemma3:4b
+  endpoint: http://localhost:11434
+  temperature: 0.1
+  max_context_tokens: 8000
+  # api_key: ""                 # set via LLM_API_KEY env var for cloud providers
+
+opensearch:
+  host: localhost
+  port: 9200
+  use_ssl: false
+  verify_certs: true
+  # Credentials — always prefer env vars:
+  #   OPENSEARCH_USERNAME / OPENSEARCH_PASSWORD
+  #   OPENSEARCH_API_KEY
+  #   OPENSEARCH_CLIENT_CERT / OPENSEARCH_CLIENT_KEY / OPENSEARCH_CA_CERTS
+  default_index: "logstash-*"
+  timestamp_field: "@timestamp"
+  message_field: "message"
+  severity_field: "level"
+  source_name_field: "host.name"
+```
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `LOG_ANALYZER_PII_SALT` | Salt for PII pseudonymisation |
+| `LOG_ANALYZER_API_TOKEN` | Bearer token for REST API auth |
+| `OPENSEARCH_USERNAME` | OpenSearch basic auth username |
+| `OPENSEARCH_PASSWORD` | OpenSearch basic auth password |
+| `OPENSEARCH_API_KEY` | OpenSearch API key (`id:base64key`) |
+| `OPENSEARCH_CLIENT_CERT` | Path to client certificate |
+| `OPENSEARCH_CLIENT_KEY` | Path to client private key |
+| `OPENSEARCH_CA_CERTS` | Path to CA certificate bundle |
+| `LOGSENSE_CONFIG` | Config file path used by `analyzer serve --reload` |
+
+---
+
+## PII Redaction
+
+PII redaction runs on every log line before analysis. Three modes are available via `--redact`:
+
+| Mode | Behaviour | Use case |
+|---|---|---|
+| `redact` (default) | Replaces PII with a salted HMAC hash: `<email_a3f7c1>` | Preserves correlation across events |
+| `mask` | Replaces PII with a generic tag: `<email>` | Maximum anonymity |
+| `dry-run` | Reports PII hits without changing the text | Audit what would be redacted |
+
+**Built-in patterns:** email addresses, IPv4/IPv6, credit cards (Luhn-validated), phone numbers (international), UUIDs, JWTs, SSH private keys.
+
+### Custom PII patterns
+
+Add patterns in `pii_rules.yaml`:
+
+```yaml
+patterns:
+  - name: employee_id
+    pattern: '\bEMP-\d{4,8}\b'
+    prefix: employee   # produces <employee_abc123>
+
+  - name: order_id
+    pattern: '\bORD-[A-Z0-9]{8,12}\b'
+    prefix: order
+```
+
+Or register patterns via the [Plugin System](#plugin-system).
+
+---
+
+## Detection Rules
+
+Rules live in `log_analyzer/rules/builtin/` (shipped) or any YAML file you point to with `--rules-dir`.
+
+### Built-in rules
+
+| ID | Severity | Triggers on |
+|---|---|---|
+| `SSH_BRUTE_FORCE` | high | Multiple SSH auth failures from one host |
+| `SUDO_MISUSE` | high | `sudo: auth failure` / `sudo: user NOT in sudoers` |
+| `AUTH_NEW_UID0` | critical | New UID 0 account created |
+| `NGINX_404_SCAN` | medium | High rate of 404 responses (scanner pattern) |
+| `NGINX_5XX_SPIKE` | high | Multiple 5xx errors in a short window |
+| `WIN_FAILED_LOGON` | medium | Windows Event ID 4625 (failed logon) |
+| `WIN_ACCOUNT_CREATED` | medium | Windows Event ID 4720 (account created) |
+
+### Writing custom rules
+
+```yaml
+id: MY_RULE_001
+title: "Sensitive file accessed"
+description: "Fires when /etc/passwd is accessed via nginx"
+level: high     # low | medium | high | critical
+detection:
+  match:
+    - field: message
+      op: contains
+      value: "/etc/passwd"
+    - field: message
+      op: regex
+      value: 'GET\s+/etc/passwd'
+  condition: any   # any (OR) | all (AND, default)
+```
+
+**Supported operators:** `contains`, `not_contains`, `regex`, `not_regex`, `startswith`, `endswith`, `equals`, `gte`, `lte`.
+
+Validate a rule before using it:
+
+```bash
+analyzer rules validate my_rule.yml
+```
+
+### Sigma rules
+
+Import a Sigma rule and convert it to the native format:
+
+```bash
+analyzer rules validate sigma_rule.yml --sigma
+```
+
+---
+
+## Plugin System
+
+Drop Python files into a directory and register custom rules and PII patterns. Enable in `config.yaml`:
+
+```yaml
+plugins_dir: plugins/
+```
+
+A plugin file must expose a `register(registry)` function:
+
+```python
+# plugins/my_plugin.py
+
+def register(registry) -> None:
+    # Custom detection rule
+    registry.add_rule({
+        "id": "MY_DB_LEAK",
+        "title": "Database credentials exposed in log",
+        "description": "Fires when a connection string appears in a log message.",
+        "level": "critical",
+        "detection": {
+            "match": [
+                {"field": "message", "op": "regex", "value": r"postgresql://\S+:\S+@"},
+            ]
+        },
+    })
+
+    # Custom PII pattern — redacts internal employee IDs
+    registry.add_pii_pattern(
+        name="employee_id",
+        pattern=r"\bEMP-\d{4,8}\b",
+        prefix="employee",
+    )
+
+    # Load an entire directory of YAML rule files
+    from pathlib import Path
+    registry.add_rule_dir(Path(__file__).parent / "my_rules")
+```
+
+Plugin rules participate in both `analyzer scan`, `analyzer tail`, and the web dashboard rule engine. Plugin PII patterns apply to every redaction pass. A plugin that raises an exception is logged as a warning and skipped — it never crashes the host process.
+
+---
+
+## Anomaly Detection
+
+LogSense uses a statistical Z-score baseline to detect unusual log activity without writing any rules. Features tracked per 60-second bucket: total event count, error rate, warning rate.
+
+**Training workflow:**
+
+```bash
+# Step 1: Feed representative logs (repeat for several days of data)
+analyzer anomaly learn /var/log/syslog --source syslog
+
+# Step 2: Check training state
+analyzer anomaly status
+# shows: syslog → 42 observations  trained ✓
+
+# Step 3: Enable detection in scan or tail
+analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+```
+
+At least **5 time buckets** are required before the baseline is used. The baseline grows automatically every time you scan with `--detect-anomalies` — no separate training step is needed once you're in production.
+
+Adjust sensitivity with `--anomaly-threshold` (default: `3.0` standard deviations):
+
+```bash
+# More sensitive
+analyzer scan /var/log/syslog --detect-anomalies --anomaly-threshold 2.0
+
+# Less sensitive
+analyzer scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
+```
+
+---
+
+## LLM Integration
+
+### Ollama (recommended — fully local)
+
+```bash
+# Install and start Ollama: https://ollama.ai
+ollama pull gemma3:4b
+
+# Default config already points to http://localhost:11434
+analyzer llm info
+```
+
+### Claude (Anthropic)
+
+```yaml
+# config.yaml
+llm:
+  provider: claude
+  model: claude-3-5-haiku-20241022
+```
+
+```bash
+export LLM_API_KEY=sk-ant-...
+analyzer llm info
+```
+
+### OpenAI-compatible APIs
+
+```yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  endpoint: https://api.openai.com/v1
+```
+
+```bash
+export LLM_API_KEY=sk-...
+```
+
+> When using a cloud provider, LogSense prints a warning before sending any redacted data to the external API.
+
+---
+
+## Web Dashboard & REST API
+
+Start the server (requires `pip install '.[web]'`):
+
+```bash
+analyzer serve --port 8080
+```
+
+### Dashboard pages
+
+| URL | Description |
+|---|---|
+| `/` | Overview with 14-day trend chart and quick stats |
+| `/findings` | Findings table with severity filter, inline LLM explain |
+| `/errors` | Error group table with frequency and recency sorting |
+
+### REST API v1
+
+Base path: `/api/v1/`  
+Interactive docs: `/api/docs`
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/health` | Liveness probe (no auth) |
+| `GET` | `/api/v1/findings` | List findings (`?severity=high&since_hours=24&source=nginx.log`) |
+| `GET` | `/api/v1/findings/{id}` | Get finding by ID |
+| `GET` | `/api/v1/errors` | List error groups (`?sort=count`) |
+| `GET` | `/api/v1/errors/{fingerprint}` | Get error group + recent occurrences |
+| `GET` | `/api/v1/stats` | Aggregate counts |
+| `POST` | `/api/v1/events` | Ingest a raw log line → returns triggered findings |
+
+**Authentication**
+
+Set `api_token` in `config.yaml` or via `LOG_ANALYZER_API_TOKEN`. Pass it as:
+
+```
+Authorization: Bearer <token>
+```
+
+Leave empty to disable auth (for local development or Docker with network-level access control).
+
+**Event ingestion example**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/events \
+  -H "Authorization: Bearer mytoken" \
+  -H "Content-Type: application/json" \
+  -d '{"raw": "Failed password for root from 1.2.3.4 port 22", "source": "sshd"}'
+```
+
+---
+
+## Docker
+
+### Quick start
+
+```bash
+docker compose up -d
+```
+
+The stack starts LogSense on port `8080` with a named volume for the SQLite database.
+
+### Environment variables for Docker
+
+```bash
+# docker-compose.yml (or .env file)
+LOG_ANALYZER_API_TOKEN=change-me-in-production
+LOG_ANALYZER_PII_SALT=a-long-random-string
+```
+
+### Build and run manually
+
+```bash
+docker build -t logsense .
+
+docker run -d \
+  -p 8080:8080 \
+  -v logsense-data:/data \
+  -e LOG_ANALYZER_API_TOKEN=mytoken \
+  -e LOG_ANALYZER_PII_SALT=mysalt \
+  logsense
+```
+
+The container runs as a non-root user (`logsense`, UID 1001). The database and config are stored in `/data`.
+
+### Scanning log files inside Docker
+
+Mount the host log directory and run a one-shot scan:
+
+```bash
+docker run --rm \
+  -v /var/log:/logs:ro \
+  -v logsense-data:/data \
+  logsense \
+  analyzer scan /logs/syslog --track-errors
+```
+
+---
+
+## Contributing
+
+```bash
+# Clone and install in dev mode
+git clone https://github.com/T0nd3/logsense.git
+cd logsense
+pip install -e '.[web,opensearch,evtx,claude,embed,dev]'
+
+# Run tests
+pytest
+
+# Lint and format
+ruff check .
+ruff format .
+```
+
+### Project layout
+
+```
+log_analyzer/          Core library
+  adapters/            File, stdin, tail, OpenSearch event adapters
+  anomaly/             Statistical baseline and Z-score detector
+  errors/              Error fingerprinting and grouping
+  export/              Markdown report generator
+  llm/                 LLM client factory and prompt templates
+  parsers/             Syslog, Nginx, JSON Lines, EVTX, plaintext parsers
+  pii/                 PII patterns and redactor
+  plugins/             Plugin loader and registry
+  rules/               Rule engine, YAML loader, Sigma converter
+  storage/             SQLite repositories (findings, errors, baseline, dismiss)
+  web/                 FastAPI app, HTMX routes, Jinja2 templates
+
+cli/                   Typer CLI commands
+  main.py              Entry point, scan command
+  tail_cmd.py          tail command
+  serve_cmd.py         serve command
+  findings_cmd.py      findings subcommand group
+  errors_cmd.py        errors subcommand group
+  anomaly_cmd.py       anomaly subcommand group
+  llm_cmd.py           llm subcommand group
+  opensearch_cmd.py    opensearch subcommand group
+  export_cmd.py        export subcommand group
+  demo_cmd.py          interactive demo
+  colors.py            Shared severity colour map
+  _types.py            Shared CLI type definitions
+
+tests/                 pytest test suite
+
+plugins/               Example plugin (add your own here)
+config.yaml.example    Annotated configuration template
+pii_rules.yaml         Custom PII pattern definitions
+Dockerfile             Multi-stage production image
+docker-compose.yml     Compose stack with named volume
+```
