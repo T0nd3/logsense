@@ -1,0 +1,23 @@
+# Normalize line endings on commit; checkout as-is on Windows
+* text=auto
+
+# Force LF for cross-platform text files
+*.py   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.toml text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.sh   text eol=lf
+*.cfg  text eol=lf
+*.ini  text eol=lf
+*.json text eol=lf
+
+# Binaries — never touch line endings
+*.db    binary
+*.db-shm binary
+*.db-wal binary
+*.whl   binary
+*.png   binary
+*.jpg   binary
+*.ico   binary

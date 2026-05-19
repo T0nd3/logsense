@@ -1,0 +1,21 @@
+id: nginx_5xx_spike
+title: Nginx 5xx Error Spike
+description: >
+  A high number of HTTP 5xx responses in a short window indicates server-side
+  errors, a failing backend, or a misconfiguration after a deployment.
+level: high
+logsource:
+  formats:
+    - nginx_combined
+detection:
+  match:
+    - field: parsed_fields.status
+      op: gte
+      value: "500"
+  aggregate:
+    count: ">= 10"
+    timeframe: 1m
+tags:
+  - availability
+  - nginx
+  - errors

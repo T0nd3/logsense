@@ -1,0 +1,67 @@
+import pytest
+
+from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+
+
+@pytest.fixture
+def redactor():
+    return PIIRedactor(salt="test-salt-123", mode=RedactMode.REDACT)
+
+
+@pytest.fixture
+def mask_redactor():
+    return PIIRedactor(salt="test-salt-123", mode=RedactMode.MASK)
+
+
+class TestPIIRedactor:
+    def test_email_redacted(self, redactor):
+        result = redactor.redact("User ben@example.com logged in")
+        assert "ben@example.com" not in result.text
+        assert len(result.hits) == 1
+
+    def test_email_deterministic(self, redactor):
+        r1 = redactor.redact("from: ben@example.com")
+        r2 = redactor.redact("to: ben@example.com")
+        token1 = r1.text.split("from: ")[1]
+        token2 = r2.text.split("to: ")[1]
+        assert token1 == token2, "same email must produce same hash"
+
+    def test_different_emails_different_hashes(self, redactor):
+        r1 = redactor.redact("ben@example.com")
+        r2 = redactor.redact("anna@example.com")
+        assert r1.text != r2.text
+
+    def test_ipv4_redacted(self, redactor):
+        result = redactor.redact("Request from 203.0.113.42 blocked")
+        assert "203.0.113.42" not in result.text
+        assert len(result.hits) == 1
+
+    def test_mask_mode(self, mask_redactor):
+        result = mask_redactor.redact("User ben@example.com connected")
+        assert "<EMAIL>" in result.text
+        assert "ben@example.com" not in result.text
+
+    def test_no_pii_no_hits(self, redactor):
+        result = redactor.redact("Server started successfully on port 8080")
+        assert result.hits == []
+        assert result.text == "Server started successfully on port 8080"
+
+    def test_iban_redacted(self, redactor):
+        result = redactor.redact("Transfer to DE89370400440532013000 processed")
+        assert "DE89370400440532013000" not in result.text
+
+    def test_valid_credit_card_redacted(self, redactor):
+        # 4532015112830366 is a valid Luhn test number
+        result = redactor.redact("Card 4532015112830366 charged")
+        assert "4532015112830366" not in result.text
+
+    def test_invalid_credit_card_not_redacted(self, redactor):
+        # 1234567890123456 fails Luhn
+        result = redactor.redact("Number 1234567890123456 in log")
+        assert "1234567890123456" in result.text
+
+    def test_multiple_pii_in_one_line(self, redactor):
+        result = redactor.redact("User ben@example.com from 10.0.0.1 logged in")
+        assert "ben@example.com" not in result.text
+        assert "10.0.0.1" not in result.text
+        assert len(result.hits) == 2

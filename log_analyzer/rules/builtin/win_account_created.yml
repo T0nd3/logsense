@@ -1,0 +1,18 @@
+id: win_account_created
+title: Windows User Account Created (EventID 4720)
+description: >
+  A new Windows user account was created (EventID 4720). May indicate
+  persistence by an attacker or an unauthorized admin action.
+level: medium
+logsource:
+  formats:
+    - evtx
+detection:
+  match:
+    - field: parsed_fields.event_id
+      op: eq
+      value: "4720"
+tags:
+  - persistence
+  - windows
+  - user-management

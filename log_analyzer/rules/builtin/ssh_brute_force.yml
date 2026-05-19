@@ -1,0 +1,23 @@
+id: ssh_brute_force
+title: SSH Brute Force
+description: >
+  Multiple failed SSH login attempts from the same source IP within a short
+  time window indicate a brute-force or credential stuffing attack.
+level: high
+logsource:
+  formats:
+    - auth_log
+    - syslog
+detection:
+  match:
+    - field: message
+      op: contains
+      value: "Failed password"
+  aggregate:
+    group_by_regex: 'from (\S+) port'
+    count: ">= 5"
+    timeframe: 5m
+tags:
+  - brute-force
+  - ssh
+  - authentication

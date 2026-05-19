@@ -1,0 +1,37 @@
+# Log-Analyzer config example — copy to config.yaml and adapt
+
+pii_salt: ""           # set here or via LOG_ANALYZER_PII_SALT env var
+db_path: log_analyzer.db
+pii_rules_path: pii_rules.yaml
+
+llm:
+  provider: ollama
+  model: gemma3:4b
+  endpoint: http://localhost:11434
+  temperature: 0.1
+  max_context_tokens: 8000
+
+opensearch:
+  host: localhost
+  port: 9200
+  use_ssl: false
+  verify_certs: true
+
+  # Auth — prefer env vars over plain-text credentials in this file:
+  #   OPENSEARCH_USERNAME / OPENSEARCH_PASSWORD
+  #   OPENSEARCH_API_KEY
+  #   OPENSEARCH_CLIENT_CERT / OPENSEARCH_CLIENT_KEY / OPENSEARCH_CA_CERTS
+  #
+  # username: myuser
+  # password: secret
+  # api_key: "keyid:base64encodedkey"
+  # ca_certs: /etc/ssl/certs/my-ca.pem
+  # client_cert: /etc/ssl/certs/client.pem
+  # client_key: /etc/ssl/private/client.key
+
+  # Index and field mapping defaults
+  default_index: "logstash-*"
+  timestamp_field: "@timestamp"
+  message_field: "message"
+  severity_field: "level"
+  source_name_field: "host.name"

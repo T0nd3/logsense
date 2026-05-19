@@ -1,0 +1,22 @@
+id: auth_new_uid0
+title: New User Created with UID 0 (Root)
+description: >
+  A new system user was created with UID 0, which grants full root access.
+  This is almost always suspicious and should be investigated immediately.
+level: critical
+logsource:
+  formats:
+    - auth_log
+    - syslog
+detection:
+  match:
+    - field: message
+      op: contains
+      value: "UID=0"
+    - field: message
+      op: contains
+      value: "new user"
+tags:
+  - persistence
+  - privilege-escalation
+  - user-management

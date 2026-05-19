@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Pytest & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# Hatch / build backends
+.hatch/
+*.dist-info/
+
+# Database & runtime artifacts
+*.db
+*.db-shm
+*.db-wal
+chroma_index/
+log_analyzer.db
+
+# Secrets / config overrides
+config.yaml
+config.local.yaml
+.env.*
+pii_rules_local.yaml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/
+
+# Logs (never commit real log files)
+*.log
+*.log.*

@@ -1,0 +1,22 @@
+id: sudo_misuse
+title: Sudo Command to Root
+description: >
+  A user ran a command as root via sudo. Flagged for audit purposes.
+  Not necessarily malicious, but worth reviewing in context.
+level: low
+logsource:
+  formats:
+    - auth_log
+    - syslog
+detection:
+  match:
+    - field: parsed_fields.process
+      op: contains
+      value: sudo
+    - field: message
+      op: contains
+      value: "USER=root"
+tags:
+  - privilege-escalation
+  - sudo
+  - audit

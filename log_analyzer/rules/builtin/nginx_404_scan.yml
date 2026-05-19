@@ -1,0 +1,22 @@
+id: nginx_404_scan
+title: HTTP 404 Scan / Directory Enumeration
+description: >
+  A large number of 404 responses from a single IP suggests automated
+  scanning or directory enumeration (e.g., with gobuster, dirsearch).
+level: medium
+logsource:
+  formats:
+    - nginx_combined
+detection:
+  match:
+    - field: parsed_fields.status
+      op: eq
+      value: "404"
+  aggregate:
+    group_by: parsed_fields.remote_addr
+    count: ">= 20"
+    timeframe: 5m
+tags:
+  - scanning
+  - recon
+  - nginx

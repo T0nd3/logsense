@@ -1,0 +1,22 @@
+id: win_failed_logon
+title: Windows Failed Logon (EventID 4625)
+description: >
+  Multiple failed Windows logon events (EventID 4625) from the same
+  source indicate a brute-force or password-spray attack.
+level: high
+logsource:
+  formats:
+    - evtx
+detection:
+  match:
+    - field: parsed_fields.event_id
+      op: eq
+      value: "4625"
+  aggregate:
+    group_by: parsed_fields.ip_address
+    count: ">= 5"
+    timeframe: 5m
+tags:
+  - brute-force
+  - windows
+  - authentication

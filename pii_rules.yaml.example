@@ -1,0 +1,23 @@
+# PII Redaction Rules – copy to pii_rules.yaml and adapt
+#
+# Built-in patterns (always active): email, ipv4, ipv6, iban, credit_card, phone_de
+#
+# Add domain-specific patterns below:
+
+patterns:
+  - name: customer_id
+    pattern: 'CUST-\d{6,10}'
+    prefix: customer
+
+  - name: user_id
+    pattern: 'USER-[A-Za-z0-9]{8,16}'
+    prefix: user
+
+  - name: internal_ticket
+    pattern: 'TICKET-\d{4,8}'
+    prefix: ticket
+
+  # Example: redact UUIDs
+  # - name: uuid
+  #   pattern: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+  #   prefix: uuid
