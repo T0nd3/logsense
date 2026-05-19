@@ -52,6 +52,16 @@ def findings_page(
     )
 
 
+@router.get("/upload", response_class=HTMLResponse)
+def upload_page(
+    request: Request,
+    templates: Jinja2Templates = Depends(get_templates),
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, "upload.html", {"active_page": "upload"}
+    )
+
+
 @router.get("/errors", response_class=HTMLResponse)
 def errors_page(
     request: Request,

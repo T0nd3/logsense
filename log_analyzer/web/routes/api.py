@@ -1,9 +1,12 @@
 """JSON and HTMX partial routes used by the dashboard."""
 from __future__ import annotations
 
+import gzip
+import tempfile
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -108,6 +111,133 @@ def _explain_prompt(rule_id: str, severity: str, message: str, source: str) -> s
         "",
         "Be specific and actionable.",
     ])
+
+
+# ---------------------------------------------------------------------------
+# Log file upload & instant scan
+# ---------------------------------------------------------------------------
+
+_MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+_SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+
+@router.post("/upload", response_class=HTMLResponse)
+async def api_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    redact: str = Form("redact"),
+    templates: Jinja2Templates = Depends(get_templates),
+    cfg: Config = Depends(get_config),
+) -> HTMLResponse:
+    """Accept a log file, run PII redaction + rule engine, return an HTMX partial.
+
+    Nothing is written to the database — results are shown in-page only.
+    """
+    from log_analyzer.adapters.file import FileAdapter
+    from log_analyzer.parsers.detector import FormatDetector
+    from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+
+    filename = file.filename or "upload.log"
+
+    # ── read with size guard ───────────────────────────────────────────────
+    content = await file.read(_MAX_UPLOAD_BYTES + 1)
+    if len(content) > _MAX_UPLOAD_BYTES:
+        return templates.TemplateResponse(
+            request,
+            "partials/upload_results.html",
+            {"error": f"File too large — maximum upload size is 10 MB.", "filename": filename},
+        )
+    if not content.strip():
+        return templates.TemplateResponse(
+            request,
+            "partials/upload_results.html",
+            {"error": "The uploaded file is empty.", "filename": filename},
+        )
+
+    # ── write to temp file (preserve extension for format detection) ───────
+    suffix = Path(filename).suffix or ".log"
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+
+        # ── format detection ───────────────────────────────────────────────
+        try:
+            open_fn = gzip.open if suffix == ".gz" else open
+            with open_fn(tmp_path, "rt", encoding="utf-8", errors="replace") as fh:
+                sample_lines = [next(fh) for _ in range(10) if True]
+            format_name = FormatDetector().detect(sample_lines, tmp_path).value
+        except Exception:
+            format_name = "auto"
+
+        # ── redactor ──────────────────────────────────────────────────────
+        try:
+            mode = RedactMode(redact)
+        except ValueError:
+            mode = RedactMode.REDACT
+
+        redactor = PIIRedactor.from_config(
+            salt=cfg.pii_salt,
+            rules_path=cfg.pii_rules_path,
+            mode=mode,
+        )
+
+        # ── scan ──────────────────────────────────────────────────────────
+        rule_engine = getattr(request.app.state, "rule_engine", None)
+        events_out: list[dict] = []
+        findings_out: list[dict] = []
+        pii_hits = 0
+
+        adapter = FileAdapter(tmp_path)
+        async for event in adapter.events():
+            result = redactor.redact(event.message)
+            event.message = result.text
+            pii_hits += len(result.hits)
+
+            events_out.append({
+                "timestamp": event.timestamp.strftime("%Y-%m-%d %H:%M:%S") if event.timestamp else "—",
+                "severity": event.severity.value,
+                "message": event.message[:200],
+            })
+
+            if rule_engine:
+                for f in rule_engine.process(event):
+                    findings_out.append({
+                        "rule_id": f.rule_id,
+                        "severity": f.severity.value,
+                        "message": f.message,
+                        "source": f.source,
+                        "timestamp": f.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                    })
+
+        # Sort findings: critical → high → medium → low
+        findings_out.sort(key=lambda f: _SEV_ORDER.get(f["severity"], 9))
+
+        return templates.TemplateResponse(
+            request,
+            "partials/upload_results.html",
+            {
+                "filename": filename,
+                "format_name": format_name,
+                "event_count": len(events_out),
+                "pii_hits": pii_hits,
+                "redact_mode": mode.value,
+                "findings": findings_out,
+                "sample_events": events_out[:20],
+                "error": None,
+            },
+        )
+
+    except Exception as exc:
+        return templates.TemplateResponse(
+            request,
+            "partials/upload_results.html",
+            {"error": str(exc), "filename": filename},
+        )
+    finally:
+        if tmp_path and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
 
 
 @router.post("/explain", response_class=HTMLResponse)

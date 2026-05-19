@@ -1,0 +1,100 @@
+{% if error %}
+<div class="card" style="border-color:var(--critical); margin-top:22px;">
+  <div class="card-title" style="color:var(--critical); margin-bottom:6px;">&#9888; Scan failed</div>
+  <p style="color:var(--text-muted); font-size:13px;">{{ error }}</p>
+</div>
+{% else %}
+
+{# ── summary stat cards ──────────────────────────────────────────────────── #}
+<div class="stat-grid" style="margin-top:22px;">
+  <div class="stat-card">
+    <div class="stat-label">File</div>
+    <div style="font-size:13px; font-weight:600; word-break:break-all; margin-bottom:2px;">{{ filename }}</div>
+    <div class="stat-delta">{{ format_name }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Events parsed</div>
+    <div class="stat-value c-accent">{{ event_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">PII hits</div>
+    <div class="stat-value">{{ pii_hits }}</div>
+    <div class="stat-delta">mode: {{ redact_mode }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Findings</div>
+    {% if findings %}
+      <div class="stat-value c-{{ findings[0].severity }}">{{ findings | length }}</div>
+    {% else %}
+      <div class="stat-value" style="color:var(--low)">0</div>
+    {% endif %}
+  </div>
+</div>
+
+{# ── findings table ──────────────────────────────────────────────────────── #}
+{% if findings %}
+<div class="table-card">
+  <div class="table-header">
+    <span class="table-title">Findings ({{ findings | length }})</span>
+    <span style="font-size:12px; color:var(--text-muted);">not persisted &mdash; run
+      <code>analyzer scan --track-errors</code> to save</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:90px;">Severity</th>
+        <th style="width:200px;">Rule</th>
+        <th>Message</th>
+        <th style="width:160px;">Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in findings %}
+      <tr>
+        <td><span class="badge badge-{{ f.severity }}">{{ f.severity }}</span></td>
+        <td class="mono nowrap">{{ f.rule_id }}</td>
+        <td class="truncate">{{ f.message }}</td>
+        <td class="mono nowrap" style="color:var(--text-muted);">{{ f.timestamp }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:32px; margin-top:0; border-color:var(--low);">
+  <div style="font-size:28px; margin-bottom:8px;">&#10003;</div>
+  <div style="font-size:15px; font-weight:600; color:var(--low);">No findings</div>
+  <div style="color:var(--text-muted); font-size:13px; margin-top:4px;">
+    {{ event_count }} event{{ 's' if event_count != 1 else '' }} scanned &mdash; nothing triggered the rule engine.
+  </div>
+</div>
+{% endif %}
+
+{# ── event sample ────────────────────────────────────────────────────────── #}
+{% if sample_events %}
+<div class="table-card">
+  <div class="table-header">
+    <span class="table-title">Event sample (first {{ sample_events | length }} of {{ event_count }})</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:160px;">Timestamp</th>
+        <th style="width:80px;">Severity</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ev in sample_events %}
+      <tr>
+        <td class="mono nowrap" style="color:var(--text-muted);">{{ ev.timestamp }}</td>
+        <td><span class="badge badge-{{ ev.severity }}">{{ ev.severity }}</span></td>
+        <td class="truncate">{{ ev.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endif %}

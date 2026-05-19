@@ -245,6 +245,27 @@
       animation: spin 0.7s linear infinite;
     }
 
+    /* ── upload drop-zone ───────────────────────────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(99,102,241,.06);
+    }
+    .drop-zone-icon { font-size: 36px; margin-bottom: 12px; }
+    .drop-zone-label { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .drop-zone-sub   { font-size: 12px; color: var(--text-muted); }
+    .drop-zone.has-file { border-color: var(--accent); background: rgba(99,102,241,.08); }
+
+    /* ── htmx indicator on element itself (used by hx-indicator) ────────── */
+    .htmx-indicator.htmx-request { display: inline-flex !important; align-items: center; gap: 6px; }
+
     /* ── responsive ─────────────────────────────────────────────────────── */
     @media (max-width: 960px) {
       .grid-2 { grid-template-columns: 1fr; }
@@ -259,6 +280,7 @@
     <a href="/"         class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
     <a href="/findings" class="nav-link {% if active_page == 'findings'  %}active{% endif %}">Findings</a>
     <a href="/errors"   class="nav-link {% if active_page == 'errors'    %}active{% endif %}">Errors</a>
+    <a href="/upload"   class="nav-link {% if active_page == 'upload'    %}active{% endif %}">Upload</a>
   </nav>
   <div class="container">
     {% block content %}{% endblock %}
