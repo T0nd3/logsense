@@ -87,8 +87,9 @@ class EventOut(BaseModel):
 
 @health_router.get("/health", summary="Health check")
 def health() -> dict:
-    """Returns {status: ok}. No auth required. Use for liveness probes."""
-    return {"status": "ok"}
+    """Returns {status: ok, version: ...}. No auth required. Use for liveness probes."""
+    from log_analyzer import __version__
+    return {"status": "ok", "version": __version__}
 
 
 # ---------------------------------------------------------------------------

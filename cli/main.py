@@ -465,7 +465,8 @@ def rules_validate(
 @app.command()
 def version() -> None:
     """Print version."""
-    typer.echo("log-analyzer 0.1.0")
+    from log_analyzer import __version__
+    typer.echo(f"log-analyzer {__version__}")
 
 
 if __name__ == "__main__":

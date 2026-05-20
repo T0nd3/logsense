@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 
+from log_analyzer import __version__
 from log_analyzer.config import Config
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -42,7 +43,7 @@ def create_app(config: Config) -> FastAPI:
             "Authenticate via `Authorization: Bearer <token>` on `/api/v1/*` endpoints "
             "when `api_token` is set in config."
         ),
-        version="0.1.0",
+        version=__version__,
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",
