@@ -26,9 +26,7 @@ def _require_opensearch():
 
         return opensearchpy
     except ImportError:
-        raise ImportError(
-            "opensearch-py is not installed. Run: pip install logsense[opensearch]"
-        )
+        raise ImportError("opensearch-py is not installed. Run: pip install logsense[opensearch]")
 
 
 def _make_client(

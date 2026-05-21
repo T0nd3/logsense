@@ -70,9 +70,7 @@ class ClaudeClient(AbstractLLMClient):
 
     def generate(self, prompt: str, stream: bool = True) -> Iterator[str]:
         if not _SDK_AVAILABLE:
-            raise RuntimeError(
-                "anthropic SDK not installed. Run: pip install logsense[claude]"
-            )
+            raise RuntimeError("anthropic SDK not installed. Run: pip install logsense[claude]")
         if not self._api_key:
             raise RuntimeError(
                 "No Anthropic API key found.\n"
