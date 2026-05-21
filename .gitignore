@@ -58,6 +58,7 @@ Thumbs.db
 # Private planning / strategy docs — not for the public repo
 Log-Analyzer.md
 
-# Logs (never commit real log files)
+# Logs (never commit real log files) — test fixtures under tests/data are an exception
 *.log
 *.log.*
+!tests/data/**

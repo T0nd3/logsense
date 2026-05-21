@@ -1,0 +1,6 @@
+May 18 09:55:00 webserver kernel: [123456.789] eth0: renamed from veth1234abc
+May 18 09:55:01 webserver systemd[1]: Starting nginx.service...
+May 18 09:55:02 webserver systemd[1]: Started nginx.service.
+May 18 09:55:10 webserver cron[900]: (root) CMD (/usr/local/bin/backup.sh)
+May 18 09:56:00 webserver rsyslogd: -- MARK --
+May 18 09:57:00 webserver kernel: [123567.001] OOM killer invoked, killing process 4321

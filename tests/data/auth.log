@@ -1,0 +1,7 @@
+May 18 10:00:01 webserver sshd[1234]: Accepted publickey for admin from 10.0.0.5 port 52341 ssh2
+May 18 10:00:15 webserver sshd[1235]: Failed password for invalid user guest from 203.0.113.42 port 22 ssh2
+May 18 10:00:16 webserver sshd[1235]: Failed password for invalid user guest from 203.0.113.42 port 22 ssh2
+May 18 10:00:17 webserver sshd[1235]: Failed password for invalid user guest from 203.0.113.42 port 22 ssh2
+May 18 10:01:00 webserver sudo[2000]: admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/bin/systemctl restart nginx
+May 18 10:01:30 webserver useradd[2100]: new user: name=deploy, UID=1002, GID=1002, home=/home/deploy, shell=/bin/bash
+May 18 10:02:00 webserver sshd[1300]: Disconnected from 10.0.0.5 port 52341

@@ -1,0 +1,6 @@
+{"timestamp": "2026-05-18T10:00:00Z", "level": "info", "message": "Server started", "service": "api"}
+{"timestamp": "2026-05-18T10:00:01Z", "level": "info", "message": "Listening on :8080", "service": "api"}
+{"timestamp": "2026-05-18T10:00:05Z", "level": "warning", "message": "High memory usage: 87%", "service": "api", "value": 87}
+{"timestamp": "2026-05-18T10:00:10Z", "level": "error", "message": "Database connection failed", "service": "api", "error": "connection refused"}
+{"timestamp": "2026-05-18T10:00:11Z", "level": "info", "message": "Retrying database connection", "service": "api", "attempt": 1}
+{"timestamp": "2026-05-18T10:00:12Z", "level": "info", "message": "Database reconnected", "service": "api"}

@@ -1,0 +1,7 @@
+192.168.1.10 - - [18/May/2026:10:15:00 +0000] "GET /api/health HTTP/1.1" 200 42 "-" "curl/7.88.0"
+10.0.0.5 - frank [18/May/2026:10:15:01 +0000] "POST /api/login HTTP/1.1" 200 318 "-" "Mozilla/5.0"
+203.0.113.42 - - [18/May/2026:10:15:02 +0000] "GET /admin HTTP/1.1" 404 153 "-" "python-requests/2.31"
+203.0.113.42 - - [18/May/2026:10:15:03 +0000] "GET /wp-admin HTTP/1.1" 404 153 "-" "python-requests/2.31"
+203.0.113.42 - - [18/May/2026:10:15:04 +0000] "GET /.env HTTP/1.1" 404 153 "-" "python-requests/2.31"
+10.0.0.1 - - [18/May/2026:10:15:05 +0000] "GET /index.html HTTP/1.1" 200 1024 "https://example.com" "Mozilla/5.0"
+10.0.0.2 - - [18/May/2026:10:15:06 +0000] "DELETE /api/users/42 HTTP/1.1" 500 89 "-" "Go-http-client/1.1"

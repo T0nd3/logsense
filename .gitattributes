@@ -13,6 +13,9 @@
 *.ini  text eol=lf
 *.json text eol=lf
 
+# Test fixtures — pin to LF so they are byte-identical on every platform
+tests/data/** text eol=lf
+
 # Binaries — never touch line endings
 *.db    binary
 *.db-shm binary
