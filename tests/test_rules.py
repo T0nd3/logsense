@@ -310,7 +310,7 @@ detection:
         assert "evtx" in (rule.logsource_formats or [])
         assert any(c.field == "parsed_fields.event_id" for c in rule.match)
 
-    def test_sigma_count_by_field(self, tmp_path):  # noqa: keep existing tests above
+    def test_sigma_count_by_field(self, tmp_path):
         p = self._sigma_rule(
             tmp_path,
             """
@@ -360,7 +360,7 @@ class TestGetFieldExtended:
 
 
 class TestMatchConditionOperators:
-    def _rule(self, op: str, value: str, field: str = "message") -> "Rule":
+    def _rule(self, op: str, value: str, field: str = "message") -> Rule:
         return _make_rule([{"field": field, "op": op, "value": value}])
 
     def test_ne_matches(self):
@@ -527,8 +527,8 @@ class TestTsUtc:
         assert result.tzinfo is not None
 
     def test_aware_datetime_unchanged(self):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        aware = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        aware = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
         result = _ts_utc(aware)
         assert result == aware

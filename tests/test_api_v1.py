@@ -175,9 +175,7 @@ class TestAuth:
         assert r.status_code == 401
 
     def test_correct_token_returns_200(self, client_auth: TestClient) -> None:
-        r = client_auth.get(
-            "/api/v1/findings", headers={"Authorization": f"Bearer {_TOKEN}"}
-        )
+        r = client_auth.get("/api/v1/findings", headers={"Authorization": f"Bearer {_TOKEN}"})
         assert r.status_code == 200
 
     def test_health_bypasses_auth(self, client_auth: TestClient) -> None:
@@ -242,8 +240,8 @@ class TestFindingsList:
         """
         import sqlite3 as _sqlite3
 
-        from log_analyzer.storage.schema import SCHEMA_SQL
         from log_analyzer.storage.findings_schema import FINDINGS_SCHEMA_SQL
+        from log_analyzer.storage.schema import SCHEMA_SQL
 
         old_ts = (datetime.now(tz=UTC) - timedelta(hours=48)).isoformat()
         conn = _sqlite3.connect(db_path)
@@ -425,7 +423,12 @@ class TestStats:
     def test_response_schema(self, client: TestClient) -> None:
         r = client.get("/api/v1/stats")
         body = r.json()
-        for field in ("findings_total", "findings_by_severity", "error_types", "error_occurrences"):
+        for field in (
+            "findings_total",
+            "findings_by_severity",
+            "error_types",
+            "error_occurrences",
+        ):
             assert field in body
 
 
@@ -448,7 +451,9 @@ class TestEventIngest:
         assert r.json()["parsed"] is True
 
     def test_explicit_format_plaintext(self, client: TestClient) -> None:
-        r = client.post("/api/v1/events", json={"raw": "INFO server started", "format": "plaintext"})
+        r = client.post(
+            "/api/v1/events", json={"raw": "INFO server started", "format": "plaintext"}
+        )
         assert r.status_code == 200
         assert r.json()["parsed"] is True
 

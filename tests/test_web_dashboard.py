@@ -14,7 +14,6 @@ from log_analyzer.storage.errors_repo import ErrorsRepository
 from log_analyzer.storage.findings_repo import FindingsRepository
 from log_analyzer.web.app import create_app
 
-
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------

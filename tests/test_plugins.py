@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from log_analyzer.plugins.loader import load_plugins
 from log_analyzer.plugins.registry import PluginRegistry
-
 
 # ---------------------------------------------------------------------------
 # PluginRegistry
@@ -24,12 +21,14 @@ class TestPluginRegistry:
 
     def test_add_rule(self) -> None:
         r = PluginRegistry()
-        r.add_rule({
-            "id": "PLUGIN_RULE",
-            "title": "Plugin test rule",
-            "level": "high",
-            "conditions": [{"field": "message", "op": "contains", "value": "BADWORD"}],
-        })
+        r.add_rule(
+            {
+                "id": "PLUGIN_RULE",
+                "title": "Plugin test rule",
+                "level": "high",
+                "conditions": [{"field": "message", "op": "contains", "value": "BADWORD"}],
+            }
+        )
         assert len(r.rules) == 1
         assert r.rules[0].id == "PLUGIN_RULE"
 
@@ -59,12 +58,14 @@ class TestPluginRegistry:
     def test_multiple_rules(self) -> None:
         r = PluginRegistry()
         for i in range(3):
-            r.add_rule({
-                "id": f"RULE_{i}",
-                "title": f"Rule {i}",
-                "level": "low",
-                "conditions": [{"field": "message", "op": "contains", "value": str(i)}],
-            })
+            r.add_rule(
+                {
+                    "id": f"RULE_{i}",
+                    "title": f"Rule {i}",
+                    "level": "low",
+                    "conditions": [{"field": "message", "op": "contains", "value": str(i)}],
+                }
+            )
         assert len(r.rules) == 3
 
 

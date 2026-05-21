@@ -6,13 +6,11 @@ No network, no LLM, no stdin — just file-based scanning.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
-from cli.main import app, _format_event, _format_finding
+from cli.main import _format_event, _format_finding, app
 from log_analyzer.models import Event, Finding, FindingSeverity, Severity
 
 runner = CliRunner()
@@ -207,7 +205,7 @@ class TestScanRuleEngine:
         assert "finding" in result.output.lower()
 
     def test_show_all_flag(self, tmp_path: Path) -> None:
-        lines = ['{"level": "info", "message": "event %d"}' % i for i in range(60)]
+        lines = [f'{{"level": "info", "message": "event {i}"}}' for i in range(60)]
         log = _write_log(tmp_path, lines)
         _, cfg = _cfg_file(tmp_path)
         result_default = runner.invoke(app, ["scan", str(log)] + cfg)
