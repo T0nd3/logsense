@@ -228,6 +228,16 @@ def v1_ingest(
     if event is None:
         return {"parsed": False, "findings": []}
 
+    # PII redaction — apply before rule engine so findings never contain raw PII
+    from log_analyzer.pii.redactor import PIIRedactor
+
+    redactor = PIIRedactor.from_config(
+        salt=cfg.pii_salt,
+        rules_path=cfg.pii_rules_path,
+    )
+    event.message = redactor.redact(event.message).text
+    event.raw = redactor.redact(event.raw).text
+
     # Rule engine — loaded at startup via lifespan; lazy-init as fallback
     from log_analyzer.rules.engine import RuleEngine
 
