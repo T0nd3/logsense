@@ -11,6 +11,7 @@ Endpoints:
   GET  /stats               aggregate stats
   POST /events              ingest a raw log line → returns triggered findings
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -39,6 +40,7 @@ router = APIRouter(
 # ---------------------------------------------------------------------------
 # Pydantic response / request models
 # ---------------------------------------------------------------------------
+
 
 class FindingOut(BaseModel):
     id: Optional[int] = None
@@ -85,16 +87,19 @@ class EventOut(BaseModel):
 # Health (unauthenticated)
 # ---------------------------------------------------------------------------
 
+
 @health_router.get("/health", summary="Health check")
 def health() -> dict:
     """Returns {status: ok, version: ...}. No auth required. Use for liveness probes."""
     from log_analyzer import __version__
+
     return {"status": "ok", "version": __version__}
 
 
 # ---------------------------------------------------------------------------
 # Findings
 # ---------------------------------------------------------------------------
+
 
 @router.get("/findings", response_model=list[FindingOut], summary="List findings")
 def v1_findings(
@@ -117,7 +122,9 @@ def v1_findings(
         return [dict(r) for r in rows[:limit]]
     return [
         dict(r)
-        for r in f_repo.list_findings(severity=severity or None, source=source or None, limit=limit)
+        for r in f_repo.list_findings(
+            severity=severity or None, source=source or None, limit=limit
+        )
     ]
 
 
@@ -137,6 +144,7 @@ def v1_finding(
 # Errors
 # ---------------------------------------------------------------------------
 
+
 @router.get("/errors", response_model=list[ErrorOut], summary="List error groups")
 def v1_errors(
     severity: Optional[str] = None,
@@ -148,10 +156,7 @@ def v1_errors(
 
     `sort` accepts: last_seen (default) | count | first_seen.
     """
-    return [
-        dict(r)
-        for r in e_repo.list_errors(sort=sort, severity=severity or None, limit=limit)
-    ]
+    return [dict(r) for r in e_repo.list_errors(sort=sort, severity=severity or None, limit=limit)]
 
 
 @router.get("/errors/{fingerprint}", summary="Get error group with occurrences")
@@ -170,6 +175,7 @@ def v1_error(
 # ---------------------------------------------------------------------------
 # Stats
 # ---------------------------------------------------------------------------
+
 
 @router.get("/stats", response_model=StatsOut, summary="Aggregate statistics")
 def v1_stats(
@@ -190,6 +196,7 @@ def v1_stats(
 # ---------------------------------------------------------------------------
 # Event ingestion
 # ---------------------------------------------------------------------------
+
 
 @router.post("/events", response_model=EventOut, summary="Ingest a log event")
 def v1_ingest(

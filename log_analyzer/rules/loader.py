@@ -27,7 +27,7 @@ def _parse_timeframe(s: str) -> int:
 def _parse_count_expr(expr: str) -> tuple[str, int]:
     for op in (">=", "<=", "!=", ">", "<", "=="):
         if expr.lstrip().startswith(op):
-            return op, int(expr.lstrip()[len(op):].strip())
+            return op, int(expr.lstrip()[len(op) :].strip())
     return ">=", int(expr.strip())
 
 
@@ -44,11 +44,13 @@ def _load_one(data: dict, source_file: str) -> Rule:
 
     match_conditions: list[MatchCondition] = []
     for cond in data.get("detection", {}).get("match", []):
-        match_conditions.append(MatchCondition(
-            field=cond["field"],
-            op=cond.get("op", "eq"),
-            value=str(cond["value"]),
-        ))
+        match_conditions.append(
+            MatchCondition(
+                field=cond["field"],
+                op=cond.get("op", "eq"),
+                value=str(cond["value"]),
+            )
+        )
 
     aggregate: AggregateCondition | None = None
     agg_data = data.get("detection", {}).get("aggregate")
@@ -117,7 +119,18 @@ def validate_rule_file(path: Path) -> list[str]:
             errors.append(f"match[{i}]: missing 'field'")
         if "value" not in cond:
             errors.append(f"match[{i}]: missing 'value'")
-        valid_ops = {"eq", "ne", "contains", "startswith", "endswith", "re", "gt", "lt", "gte", "lte"}
+        valid_ops = {
+            "eq",
+            "ne",
+            "contains",
+            "startswith",
+            "endswith",
+            "re",
+            "gt",
+            "lt",
+            "gte",
+            "lte",
+        }
         op = cond.get("op", "eq")
         if op not in valid_ops:
             errors.append(f"match[{i}]: unknown op '{op}'. Valid: {', '.join(sorted(valid_ops))}")

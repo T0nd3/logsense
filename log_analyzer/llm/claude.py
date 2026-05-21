@@ -3,6 +3,7 @@
 Requires: pip install log-analyzer[claude]  (installs anthropic SDK)
 API key:  set ANTHROPIC_API_KEY env var  or  llm.api_key in config.yaml
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -44,6 +45,7 @@ class ClaudeClient(AbstractLLMClient):
             return False
         try:
             import anthropic
+
             client = anthropic.Anthropic(api_key=self._api_key)
             # Lightweight call — just lists available models
             list(client.models.list(limit=1))
@@ -56,6 +58,7 @@ class ClaudeClient(AbstractLLMClient):
             return []
         try:
             import anthropic
+
             client = anthropic.Anthropic(api_key=self._api_key)
             return [m.id for m in client.models.list()]
         except Exception:

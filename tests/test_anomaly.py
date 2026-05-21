@@ -68,19 +68,22 @@ def _make_baseline(
 ) -> BaselineStats:
     """Build a synthetic baseline from feature dicts."""
     import random
+
     random.seed(42)
     fds = []
     for _ in range(n):
-        fds.append({
-            "event_count": random.gauss(event_count_mean, event_count_std),
-            "error_rate": max(0.0, random.gauss(error_rate_mean, error_rate_std)),
-            "warning_rate": 0.05,
-            "source_count": 1.0,
-            "http_5xx_count": 0.0,
-            "http_4xx_count": 3.0,
-            "avg_bytes": 1000.0,
-            "path_entropy": 2.0,
-        })
+        fds.append(
+            {
+                "event_count": random.gauss(event_count_mean, event_count_std),
+                "error_rate": max(0.0, random.gauss(error_rate_mean, error_rate_std)),
+                "warning_rate": 0.05,
+                "source_count": 1.0,
+                "http_5xx_count": 0.0,
+                "http_4xx_count": 3.0,
+                "avg_bytes": 1000.0,
+                "path_entropy": 2.0,
+            }
+        )
     return compute_stats(fds, "test")
 
 
@@ -95,6 +98,7 @@ def repo(tmp_path: Path) -> BaselineRepository:
 # ---------------------------------------------------------------------------
 # TimeBucket
 # ---------------------------------------------------------------------------
+
 
 class TestTimeBucket:
     def test_error_rate_zero_events(self):
@@ -138,8 +142,14 @@ class TestTimeBucket:
         b = _bucket()
         fd = b.to_feature_dict()
         expected = {
-            "event_count", "error_rate", "warning_rate", "source_count",
-            "http_5xx_count", "http_4xx_count", "avg_bytes", "path_entropy",
+            "event_count",
+            "error_rate",
+            "warning_rate",
+            "source_count",
+            "http_5xx_count",
+            "http_4xx_count",
+            "avg_bytes",
+            "path_entropy",
         }
         assert set(fd.keys()) == expected
 
@@ -153,14 +163,21 @@ class TestTimeBucket:
 # FeatureExtractor
 # ---------------------------------------------------------------------------
 
+
 class TestFeatureExtractor:
     def test_empty_events(self):
         ext = FeatureExtractor(bucket_seconds=60)
         assert ext.extract([]) == []
 
     def test_no_timestamps_ignored(self):
-        ev = Event(raw="x", source="s", message="x", timestamp=None,
-                   severity=Severity.INFO, parsed_fields={})
+        ev = Event(
+            raw="x",
+            source="s",
+            message="x",
+            timestamp=None,
+            severity=Severity.INFO,
+            parsed_fields={},
+        )
         ext = FeatureExtractor(bucket_seconds=60)
         assert ext.extract([ev]) == []
 
@@ -229,6 +246,7 @@ class TestFeatureExtractor:
 # Baseline stats
 # ---------------------------------------------------------------------------
 
+
 class TestComputeStats:
     def test_empty_returns_empty_baseline(self):
         stats = compute_stats([], "test")
@@ -276,6 +294,7 @@ class TestComputeStats:
 # FeatureStat
 # ---------------------------------------------------------------------------
 
+
 class TestFeatureStat:
     def test_zscore_zero_std(self):
         stat = FeatureStat(mean=5.0, std=0.0, n=3)
@@ -295,6 +314,7 @@ class TestFeatureStat:
 # detect_anomalies
 # ---------------------------------------------------------------------------
 
+
 class TestDetectAnomalies:
     def test_empty_buckets(self):
         baseline = _make_baseline()
@@ -313,7 +333,9 @@ class TestDetectAnomalies:
         results = detect_anomalies([b], baseline, threshold=3.0)
         # May or may not fire depending on other features; check event_count not anomalous
         for r in results:
-            assert "event_count" not in r.anomalous_features or abs(r.zscores["event_count"]) >= 3.0
+            assert (
+                "event_count" not in r.anomalous_features or abs(r.zscores["event_count"]) >= 3.0
+            )
 
     def test_spike_flagged(self):
         # Train on quiet baseline, then score a bucket with massive error spike
@@ -338,9 +360,7 @@ class TestDetectAnomalies:
         # 3σ → low, large spike → high/critical
         huge_spike = _bucket(event_count=100, error_count=80)
         results = detect_anomalies([huge_spike], baseline)
-        assert results[0].severity in (
-            FindingSeverity.HIGH, FindingSeverity.CRITICAL
-        )
+        assert results[0].severity in (FindingSeverity.HIGH, FindingSeverity.CRITICAL)
 
     def test_confidence_in_range(self):
         baseline = _make_baseline(n=20, error_rate_mean=0.01, error_rate_std=0.001)
@@ -360,6 +380,7 @@ class TestDetectAnomalies:
 # ---------------------------------------------------------------------------
 # anomaly_results_to_findings
 # ---------------------------------------------------------------------------
+
 
 class TestAnomalyResultsToFindings:
     def _make_result(self, method: str = "zscore") -> AnomalyResult:
@@ -415,6 +436,7 @@ class TestAnomalyResultsToFindings:
 # ---------------------------------------------------------------------------
 # BaselineRepository
 # ---------------------------------------------------------------------------
+
 
 class TestBaselineRepository:
     def _fds(self, n: int = 5) -> list[dict[str, float]]:

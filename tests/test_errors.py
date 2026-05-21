@@ -20,6 +20,7 @@ from log_analyzer.storage.errors_repo import ErrorsRepository
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _event(
     message: str,
     severity: Severity = Severity.ERROR,
@@ -53,6 +54,7 @@ def tracker(repo: ErrorsRepository) -> ErrorTracker:
 # ---------------------------------------------------------------------------
 # Normalizer
 # ---------------------------------------------------------------------------
+
 
 class TestNormalizer:
     def test_uuid_replaced(self):
@@ -119,6 +121,7 @@ class TestNormalizer:
 # Fingerprint
 # ---------------------------------------------------------------------------
 
+
 class TestExtractErrorType:
     def test_exception_class_prefix(self):
         assert extract_error_type("NullPointerException: obj was null") == "NullPointerException"
@@ -148,8 +151,12 @@ class TestExtractErrorType:
 
 class TestFingerprint:
     def test_same_error_same_fingerprint(self):
-        a = fingerprint("ConnectionError: Failed to connect to db-prod-3.internal after 30 retries")
-        b = fingerprint("ConnectionError: Failed to connect to db-prod-4.internal after 60 retries")
+        a = fingerprint(
+            "ConnectionError: Failed to connect to db-prod-3.internal after 30 retries"
+        )
+        b = fingerprint(
+            "ConnectionError: Failed to connect to db-prod-4.internal after 60 retries"
+        )
         assert a == b
 
     def test_different_error_different_fingerprint(self):
@@ -174,6 +181,7 @@ class TestFingerprint:
 # ---------------------------------------------------------------------------
 # Detector
 # ---------------------------------------------------------------------------
+
 
 class TestIsErrorEvent:
     def test_error_severity(self):
@@ -215,7 +223,7 @@ class TestIsErrorEvent:
 
 class TestDetectStackTrace:
     def test_python_traceback(self):
-        msg = "Traceback (most recent call last):\n  File \"app.py\", line 10, in main\nValueError: bad"
+        msg = 'Traceback (most recent call last):\n  File "app.py", line 10, in main\nValueError: bad'
         assert detect_stack_trace(msg) is not None
 
     def test_java_stack(self):
@@ -259,6 +267,7 @@ class TestClassifyStackLanguage:
 # ErrorTracker
 # ---------------------------------------------------------------------------
 
+
 class TestErrorTracker:
     def test_non_error_event_returns_none(self, tracker: ErrorTracker):
         ev = _event("all systems operational", severity=Severity.INFO)
@@ -288,6 +297,7 @@ class TestErrorTracker:
         ev = _event("RuntimeError: crash", source="app-server")
         row = tracker.process(ev)
         import json
+
         sources = json.loads(row["sources"])
         assert "app-server" in sources
 
@@ -296,6 +306,7 @@ class TestErrorTracker:
         tracker.process(_event(msg, source="web-1"))
         row = tracker.process(_event(msg, source="web-2"))
         import json
+
         sources = json.loads(row["sources"])
         assert "web-1" in sources
         assert "web-2" in sources
@@ -317,12 +328,14 @@ class TestErrorTracker:
 # ErrorsRepository queries
 # ---------------------------------------------------------------------------
 
+
 class TestErrorsRepository:
     def _seed(self, repo: ErrorsRepository, n: int = 3) -> list[str]:
         fps = []
         for i in range(n):
             msg = f"Error{i}: something failed with id {i}"
             from log_analyzer.errors.fingerprint import fingerprint as fp_fn
+
             fp = fp_fn(msg)
             fps.append(fp)
             repo.upsert(
@@ -356,6 +369,7 @@ class TestErrorsRepository:
 
     def test_list_errors_filter_severity(self, repo: ErrorsRepository):
         from log_analyzer.errors.fingerprint import fingerprint as fp_fn
+
         msg = "CriticalError: meltdown"
         repo.upsert(
             fingerprint=fp_fn(msg),

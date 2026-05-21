@@ -1,4 +1,5 @@
 """FastAPI dependency helpers for the web dashboard."""
+
 from __future__ import annotations
 
 from collections.abc import Generator

@@ -37,17 +37,33 @@ def opensearch_scan(
     host: Annotated[str, typer.Option("--host", "-H", help="OpenSearch host.")] = "localhost",
     port: Annotated[int, typer.Option("--port", "-p")] = 9200,
     use_ssl: Annotated[bool, typer.Option("--ssl/--no-ssl")] = False,
-    no_verify: Annotated[bool, typer.Option("--no-verify-certs", help="Skip TLS cert verification.")] = False,
+    no_verify: Annotated[
+        bool, typer.Option("--no-verify-certs", help="Skip TLS cert verification.")
+    ] = False,
     # Auth (all optional; env vars preferred over CLI flags)
-    username: Annotated[Optional[str], typer.Option("--user", "-u", envvar="OPENSEARCH_USERNAME")] = None,
-    password: Annotated[Optional[str], typer.Option("--password", envvar="OPENSEARCH_PASSWORD")] = None,
-    api_key: Annotated[Optional[str], typer.Option("--api-key", envvar="OPENSEARCH_API_KEY")] = None,
+    username: Annotated[
+        Optional[str], typer.Option("--user", "-u", envvar="OPENSEARCH_USERNAME")
+    ] = None,
+    password: Annotated[
+        Optional[str], typer.Option("--password", envvar="OPENSEARCH_PASSWORD")
+    ] = None,
+    api_key: Annotated[
+        Optional[str], typer.Option("--api-key", envvar="OPENSEARCH_API_KEY")
+    ] = None,
     # Query
     index: Annotated[str, typer.Option("--index", "-i", help="Index pattern.")] = "logstash-*",
-    since: Annotated[Optional[str], typer.Option("--since", help="Start time: '24h', '7d', or ISO datetime.")] = None,
-    until: Annotated[Optional[str], typer.Option("--until", help="End time: 'now' or ISO datetime.")] = None,
-    filter_: Annotated[Optional[list[str]], typer.Option("--filter", "-f", help="field=value filter. Repeatable.")] = None,
-    max_events: Annotated[Optional[int], typer.Option("--max", help="Max events to fetch.")] = None,
+    since: Annotated[
+        Optional[str], typer.Option("--since", help="Start time: '24h', '7d', or ISO datetime.")
+    ] = None,
+    until: Annotated[
+        Optional[str], typer.Option("--until", help="End time: 'now' or ISO datetime.")
+    ] = None,
+    filter_: Annotated[
+        Optional[list[str]], typer.Option("--filter", "-f", help="field=value filter. Repeatable.")
+    ] = None,
+    max_events: Annotated[
+        Optional[int], typer.Option("--max", help="Max events to fetch.")
+    ] = None,
     page_size: Annotated[int, typer.Option("--page-size")] = 1000,
     # Field mapping overrides
     ts_field: Annotated[str, typer.Option("--ts-field")] = "@timestamp",
@@ -78,9 +94,11 @@ def opensearch_scan(
 
     # Parse --filter key=value pairs
     filters: list[dict[str, str]] = []
-    for f in (filter_ or []):
+    for f in filter_ or []:
         if "=" not in f:
-            typer.echo(f"Warning: ignoring malformed filter '{f}' (expected field=value)", err=True)
+            typer.echo(
+                f"Warning: ignoring malformed filter '{f}' (expected field=value)", err=True
+            )
             continue
         k, _, v = f.partition("=")
         filters.append({"field": k.strip(), "value": v.strip()})
@@ -178,9 +196,15 @@ def opensearch_info(
     port: Annotated[int, typer.Option("--port", "-p")] = 9200,
     use_ssl: Annotated[bool, typer.Option("--ssl/--no-ssl")] = False,
     no_verify: Annotated[bool, typer.Option("--no-verify-certs")] = False,
-    username: Annotated[Optional[str], typer.Option("--user", envvar="OPENSEARCH_USERNAME")] = None,
-    password: Annotated[Optional[str], typer.Option("--password", envvar="OPENSEARCH_PASSWORD")] = None,
-    api_key: Annotated[Optional[str], typer.Option("--api-key", envvar="OPENSEARCH_API_KEY")] = None,
+    username: Annotated[
+        Optional[str], typer.Option("--user", envvar="OPENSEARCH_USERNAME")
+    ] = None,
+    password: Annotated[
+        Optional[str], typer.Option("--password", envvar="OPENSEARCH_PASSWORD")
+    ] = None,
+    api_key: Annotated[
+        Optional[str], typer.Option("--api-key", envvar="OPENSEARCH_API_KEY")
+    ] = None,
 ) -> None:
     """Check cluster connectivity and print basic cluster info."""
     try:
@@ -198,7 +222,9 @@ def opensearch_info(
         info = client.info()
         name = info.get("cluster_name", "?")
         version = info.get("version", {}).get("number", "?")
-        typer.echo(typer.style(f"Connected  cluster={name}  version={version}", fg=typer.colors.GREEN))
+        typer.echo(
+            typer.style(f"Connected  cluster={name}  version={version}", fg=typer.colors.GREEN)
+        )
     except Exception as e:
         typer.echo(typer.style(f"Connection failed: {e}", fg=typer.colors.RED), err=True)
         raise typer.Exit(1)

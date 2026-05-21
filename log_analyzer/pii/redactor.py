@@ -13,8 +13,8 @@ from .patterns import BUILTIN_PATTERNS, PIIPattern
 
 
 class RedactMode(str, Enum):
-    REDACT = "redact"    # replace with deterministic hash → correlation preserved
-    MASK = "mask"        # replace with <TYPE> → maximum anonymity, no correlation
+    REDACT = "redact"  # replace with deterministic hash → correlation preserved
+    MASK = "mask"  # replace with <TYPE> → maximum anonymity, no correlation
     DRY_RUN = "dry_run"  # show what would be redacted, make no changes
 
 
@@ -48,11 +48,13 @@ class PIIRedactor:
             with open(rules_path) as f:
                 data = yaml.safe_load(f) or {}
             for rule in data.get("patterns", []):
-                extra.append(PIIPattern(
-                    name=rule["name"],
-                    pattern=re.compile(rule["pattern"]),
-                    prefix=rule.get("prefix", rule["name"]),
-                ))
+                extra.append(
+                    PIIPattern(
+                        name=rule["name"],
+                        pattern=re.compile(rule["pattern"]),
+                        prefix=rule.get("prefix", rule["name"]),
+                    )
+                )
         if additional:
             extra.extend(additional)
         return cls(salt=salt, extra_patterns=extra or None, mode=mode)
@@ -62,6 +64,7 @@ class PIIRedactor:
         result = text
 
         for pii in self._patterns:
+
             def replace(m: re.Match, pii=pii) -> str:
                 value = m.group()
                 if pii.name == "credit_card" and not _luhn_check(value):

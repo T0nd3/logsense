@@ -5,6 +5,7 @@ engine on each incoming event, and prints findings immediately with
 colour-coded severity.  Optionally persists errors/findings and fires
 webhook alerts.  Runs until the user presses Ctrl+C.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -36,6 +37,7 @@ _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "
 # ---------------------------------------------------------------------------
 # Public entry point (registered on the main Typer app by main.py)
 # ---------------------------------------------------------------------------
+
 
 def tail_watch(
     path: Annotated[Path, typer.Argument(help="Log file to watch.")],
@@ -165,15 +167,11 @@ def tail_watch(
                         _print_finding(finding)
                         counts["findings"] += 1
 
-                        if alert_webhook and meets_alert_severity(
-                            finding, alert_min_severity
-                        ):
+                        if alert_webhook and meets_alert_severity(finding, alert_min_severity):
                             post_webhook(alert_webhook, finding)
                             counts["webhooks"] += 1
 
-                        if f_repo and meets_min_severity(
-                            finding, cfg.findings_min_severity
-                        ):
+                        if f_repo and meets_min_severity(finding, cfg.findings_min_severity):
                             f_repo.add_findings([finding])
 
                 # Error tracking
@@ -209,6 +207,7 @@ def tail_watch(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _print_finding(finding: Finding) -> None:
     ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")

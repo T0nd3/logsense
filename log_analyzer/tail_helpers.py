@@ -3,6 +3,7 @@
 Kept in the library layer (no typer dependency) so they can be
 tested and reused without the CLI.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,10 +18,7 @@ _SEV_ORDER: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
 def meets_alert_severity(finding: Finding, min_severity: str) -> bool:
     """Return True if finding.severity >= min_severity."""
-    return (
-        _SEV_ORDER.get(finding.severity.value, 0)
-        >= _SEV_ORDER.get(min_severity.lower(), 2)
-    )
+    return _SEV_ORDER.get(finding.severity.value, 0) >= _SEV_ORDER.get(min_severity.lower(), 2)
 
 
 def post_webhook(url: str, finding: Finding) -> None:

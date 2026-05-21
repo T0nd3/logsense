@@ -7,15 +7,15 @@ from .normalizer import normalize
 
 # Patterns that indicate a named exception/error type at the start of a message
 _EXCEPTION_PREFIX = re.compile(
-    r'^(?:[\w.]+\.)?'           # optional package prefix (java.lang.)
-    r'(\w*(?:Exception|Error|Fault|Failure|Warning|Panic|Abort))'
-    r'\b',
+    r"^(?:[\w.]+\.)?"  # optional package prefix (java.lang.)
+    r"(\w*(?:Exception|Error|Fault|Failure|Warning|Panic|Abort))"
+    r"\b",
     re.IGNORECASE,
 )
 
 # "ERROR Failed to …" / "CRITICAL Database down"
 _SEVERITY_PREFIX = re.compile(
-    r'^(?:ERROR|CRITICAL|FATAL|WARN(?:ING)?)\s+',
+    r"^(?:ERROR|CRITICAL|FATAL|WARN(?:ING)?)\s+",
     re.IGNORECASE,
 )
 
@@ -33,7 +33,7 @@ def extract_error_type(message: str) -> str:
     colon_idx = msg.find(":")
     if 0 < colon_idx < 60:
         candidate = msg[:colon_idx].strip()
-        if re.match(r'^[\w.]+$', candidate):
+        if re.match(r"^[\w.]+$", candidate):
             # Take the last component: "java.lang.NullPointerException" → "NullPointerException"
             return candidate.split(".")[-1]
 

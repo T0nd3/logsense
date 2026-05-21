@@ -3,6 +3,7 @@
 All functions return a plain string ready to be sent to the LLM.
 No LLM calls happen here — this is pure text manipulation.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ _MAX_CONTEXT_ITEMS = 8
 # ---------------------------------------------------------------------------
 # explain
 # ---------------------------------------------------------------------------
+
 
 def explain_finding_prompt(finding: Finding, occurrence_samples: list[str] | None = None) -> str:
     """Prompt asking the LLM to explain a rule-based or anomaly finding."""
@@ -93,6 +95,7 @@ def explain_error_prompt(error_row: dict, occurrences: list[dict] | None = None)
 # summarize
 # ---------------------------------------------------------------------------
 
+
 def summarize_prompt(
     error_rows: list[dict],
     since: str,
@@ -111,8 +114,8 @@ def summarize_prompt(
     ]
     for row in error_rows[:_MAX_CONTEXT_ITEMS]:
         lines.append(
-            f"  [{row.get('count', 0):>5}x] [{row.get('severity','?').upper():<8}] "
-            f"{row.get('error_type','?')} — {row.get('normalized_msg','')[:_MAX_ITEM_CHARS]}"
+            f"  [{row.get('count', 0):>5}x] [{row.get('severity', '?').upper():<8}] "
+            f"{row.get('error_type', '?')} — {row.get('normalized_msg', '')[:_MAX_ITEM_CHARS]}"
         )
 
     lines += [
@@ -131,6 +134,7 @@ def summarize_prompt(
 # ask (RAG)
 # ---------------------------------------------------------------------------
 
+
 def ask_prompt(question: str, context_chunks: list[str]) -> str:
     """RAG prompt: answer a question based on retrieved findings/error context."""
     if context_chunks:
@@ -140,39 +144,41 @@ def ask_prompt(question: str, context_chunks: list[str]) -> str:
     else:
         ctx = "(No relevant context found in the database.)"
 
-    return "\n".join([
-        "You are a log analysis assistant.",
-        "Answer the question based on the context below (findings and errors from the local database).",
-        "If the context is insufficient, say so clearly — do not invent details.",
-        "",
-        "CONTEXT:",
-        ctx,
-        "",
-        f"QUESTION: {question}",
-        "",
-        "Answer concisely and accurately.",
-    ])
+    return "\n".join(
+        [
+            "You are a log analysis assistant.",
+            "Answer the question based on the context below (findings and errors from the local database).",
+            "If the context is insufficient, say so clearly — do not invent details.",
+            "",
+            "CONTEXT:",
+            ctx,
+            "",
+            f"QUESTION: {question}",
+            "",
+            "Answer concisely and accurately.",
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
 # classify (for unstructured logs)
 # ---------------------------------------------------------------------------
 
+
 def classify_events_prompt(log_lines: list[str]) -> str:
     """Ask the LLM to classify raw log lines by severity."""
-    numbered = "\n".join(
-        f"  {i + 1:>3}. {line[:200]}"
-        for i, line in enumerate(log_lines[:30])
+    numbered = "\n".join(f"  {i + 1:>3}. {line[:200]}" for i, line in enumerate(log_lines[:30]))
+    return "\n".join(
+        [
+            "You are a log analysis expert.",
+            "Classify each log line by severity. Use: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
+            "",
+            "LOG LINES:",
+            numbered,
+            "",
+            "For each line respond with:",
+            "  LINE <N>: [SEVERITY] <one-sentence description>",
+            "",
+            "Focus on errors, warnings, and security-relevant events. Skip purely informational lines.",
+        ]
     )
-    return "\n".join([
-        "You are a log analysis expert.",
-        "Classify each log line by severity. Use: DEBUG, INFO, WARNING, ERROR, CRITICAL.",
-        "",
-        "LOG LINES:",
-        numbered,
-        "",
-        "For each line respond with:",
-        "  LINE <N>: [SEVERITY] <one-sentence description>",
-        "",
-        "Focus on errors, warnings, and security-relevant events. Skip purely informational lines.",
-    ])

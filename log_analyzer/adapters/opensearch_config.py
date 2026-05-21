@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 @dataclass
 class OpenSearchAuth:
     """Authentication config for OpenSearch. Set exactly one of the auth fields."""
+
     # Basic auth
     username: str | None = None
     password: str | None = None
@@ -21,6 +22,7 @@ class OpenSearchAuth:
     @classmethod
     def from_env(cls) -> OpenSearchAuth:
         import os
+
         return cls(
             username=os.environ.get("OPENSEARCH_USERNAME"),
             password=os.environ.get("OPENSEARCH_PASSWORD"),
@@ -37,16 +39,17 @@ class FieldMapping:
 
     Supports dot-notation for nested fields, e.g. 'log.level' or '@timestamp'.
     """
+
     timestamp: str = "@timestamp"
     message: str = "message"
-    severity: str | None = "level"        # None = don't extract
+    severity: str | None = "level"  # None = don't extract
     source_name: str | None = "host.name"  # used as event.source
 
 
 @dataclass
 class TimeRange:
-    since: str | None = None   # "24h", "7d", "2026-05-18T00:00:00Z"
-    until: str | None = None   # "now", ISO datetime
+    since: str | None = None  # "24h", "7d", "2026-05-18T00:00:00Z"
+    until: str | None = None  # "now", ISO datetime
 
 
 @dataclass
@@ -97,6 +100,6 @@ def build_query_dsl(query: OpenSearchQuery) -> dict:
         "query": query_clause,
         "sort": [
             {ts_field: {"order": "asc"}},
-            {"_id": {"order": "asc"}},   # tiebreaker for stable search_after
+            {"_id": {"order": "asc"}},  # tiebreaker for stable search_after
         ],
     }

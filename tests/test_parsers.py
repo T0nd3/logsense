@@ -1,5 +1,3 @@
-
-
 from log_analyzer.models import Severity
 from log_analyzer.parsers.json_lines import JsonLinesParser
 from log_analyzer.parsers.nginx import NginxCombinedParser
@@ -61,7 +59,9 @@ class TestNginxCombinedParser:
         assert event.severity == Severity.ERROR
 
     def test_404_is_warning(self):
-        line = '203.0.113.42 - - [18/May/2026:10:00:00 +0000] "GET /admin HTTP/1.1" 404 0 "-" "bot"'
+        line = (
+            '203.0.113.42 - - [18/May/2026:10:00:00 +0000] "GET /admin HTTP/1.1" 404 0 "-" "bot"'
+        )
         event = self.parser.parse(line)
         assert event.severity == Severity.WARNING
 

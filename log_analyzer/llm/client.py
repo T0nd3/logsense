@@ -3,6 +3,7 @@
 Communicates with a locally running Ollama instance via its REST API.
 All calls are synchronous; streaming generation yields tokens one at a time.
 """
+
 from __future__ import annotations
 
 import json
@@ -53,9 +54,7 @@ class OllamaClient(AbstractLLMClient):
     def list_models(self) -> list[str]:
         """Return names of locally available models."""
         try:
-            with urllib.request.urlopen(
-                f"{self._endpoint}/api/tags", timeout=5
-            ) as resp:
+            with urllib.request.urlopen(f"{self._endpoint}/api/tags", timeout=5) as resp:
                 data = json.loads(resp.read())
                 return [m["name"] for m in data.get("models", [])]
         except Exception:
@@ -106,9 +105,7 @@ class OllamaClient(AbstractLLMClient):
                     data = json.loads(resp.read())
                     yield data.get("response", "")
         except urllib.error.URLError as e:
-            raise OllamaError(
-                f"Cannot reach Ollama at {self._endpoint}: {e}"
-            ) from e
+            raise OllamaError(f"Cannot reach Ollama at {self._endpoint}: {e}") from e
 
     def generate_full(self, prompt: str) -> str:
         """Convenience method — return the complete response as a string."""
@@ -125,8 +122,8 @@ class OllamaClient(AbstractLLMClient):
         /api/embeddings if the server does not support it.
         """
         for path, key, field in (
-            ("/api/embed",       "input",  "embeddings"),
-            ("/api/embeddings",  "prompt", "embedding"),
+            ("/api/embed", "input", "embeddings"),
+            ("/api/embeddings", "prompt", "embedding"),
         ):
             payload = {"model": self._embed_model, key: text}
             req = urllib.request.Request(
@@ -145,7 +142,5 @@ class OllamaClient(AbstractLLMClient):
             except urllib.error.HTTPError:
                 continue
             except urllib.error.URLError as e:
-                raise OllamaError(
-                    f"Cannot reach Ollama at {self._endpoint}: {e}"
-                ) from e
+                raise OllamaError(f"Cannot reach Ollama at {self._endpoint}: {e}") from e
         return []

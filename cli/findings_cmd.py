@@ -48,11 +48,19 @@ def _open_dismiss_repo(config_path: Path | None) -> DismissRepository:
 # findings list
 # ---------------------------------------------------------------------------
 
+
 @app.command("list")
 def findings_list(
-    severity: Annotated[Optional[str], typer.Option("--severity", "-s", help="Filter: low|medium|high|critical.")] = None,
-    source: Annotated[Optional[str], typer.Option("--source", help="Filter by source file/key.")] = None,
-    since: Annotated[Optional[str], typer.Option("--since", help="Only findings from last N hours/days, e.g. 24h, 7d.")] = None,
+    severity: Annotated[
+        Optional[str], typer.Option("--severity", "-s", help="Filter: low|medium|high|critical.")
+    ] = None,
+    source: Annotated[
+        Optional[str], typer.Option("--source", help="Filter by source file/key.")
+    ] = None,
+    since: Annotated[
+        Optional[str],
+        typer.Option("--since", help="Only findings from last N hours/days, e.g. 24h, 7d."),
+    ] = None,
     limit: Annotated[int, typer.Option("--limit", "-n")] = 50,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
@@ -73,7 +81,7 @@ def findings_list(
     total = summary["total"]
     typer.echo(f"\n  {total} finding(s) total — showing {len(rows)}\n")
     typer.echo(f"  {'SEV':<10} {'RULE':<28} {'SOURCE':<20} {'WHEN':<20} MESSAGE")
-    typer.echo(f"  {'-'*10} {'-'*28} {'-'*20} {'-'*20} {'-'*35}")
+    typer.echo(f"  {'-' * 10} {'-' * 28} {'-' * 20} {'-' * 20} {'-' * 35}")
 
     for row in rows:
         color = _SEV_COLOR.get(row["severity"], typer.colors.WHITE)
@@ -88,6 +96,7 @@ def findings_list(
 # ---------------------------------------------------------------------------
 # findings show
 # ---------------------------------------------------------------------------
+
 
 @app.command("show")
 def findings_show(
@@ -119,7 +128,7 @@ def findings_show(
 
     typer.echo(f"\n  Occurrences ({len(rows)}):\n")
     for row in rows:
-        src = (row["source"] or "")
+        src = row["source"] or ""
         ts = _fmt_ts(row["event_timestamp"])
         raw = (row["raw_event"] or "")[:80]
         typer.echo(f"  {ts}  {src}")
@@ -130,6 +139,7 @@ def findings_show(
 # ---------------------------------------------------------------------------
 # findings summary
 # ---------------------------------------------------------------------------
+
 
 @app.command("summary")
 def findings_summary(
@@ -158,7 +168,7 @@ def findings_summary(
     if top_rules:
         typer.echo("\n  Top rules by occurrence:")
         typer.echo(f"  {'RULE':<30} {'SEV':<10} COUNT")
-        typer.echo(f"  {'-'*30} {'-'*10} {'-'*5}")
+        typer.echo(f"  {'-' * 30} {'-' * 10} {'-' * 5}")
         for row in top_rules:
             color = _SEV_COLOR.get(row["severity"], typer.colors.WHITE)
             sev = typer.style(row["severity"].upper().ljust(10), fg=color)
@@ -171,11 +181,19 @@ def findings_summary(
 # findings dismiss / undismiss / dismissed
 # ---------------------------------------------------------------------------
 
+
 @app.command("dismiss")
 def findings_dismiss(
     rule_id: Annotated[str, typer.Argument(help="Rule ID to suppress (e.g. SSH_BRUTE_FORCE).")],
-    source: Annotated[Optional[str], typer.Option("--source", help="Limit to this source file only. Omit to suppress globally.")] = None,
-    reason: Annotated[Optional[str], typer.Option("--reason", "-r", help="Optional reason for the dismissal.")] = None,
+    source: Annotated[
+        Optional[str],
+        typer.Option(
+            "--source", help="Limit to this source file only. Omit to suppress globally."
+        ),
+    ] = None,
+    reason: Annotated[
+        Optional[str], typer.Option("--reason", "-r", help="Optional reason for the dismissal.")
+    ] = None,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
     """Suppress a rule — future findings from this rule will be filtered out.
@@ -201,7 +219,10 @@ def findings_dismiss(
 @app.command("undismiss")
 def findings_undismiss(
     rule_id: Annotated[str, typer.Argument(help="Rule ID to re-enable.")],
-    source: Annotated[Optional[str], typer.Option("--source", help="Remove only the source-specific suppression.")] = None,
+    source: Annotated[
+        Optional[str],
+        typer.Option("--source", help="Remove only the source-specific suppression."),
+    ] = None,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
     """Re-enable a previously dismissed rule."""

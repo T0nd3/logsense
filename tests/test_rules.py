@@ -17,6 +17,7 @@ _DATA = Path(__file__).parent / "data"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _event(message: str, ts: datetime | None = None, **parsed) -> Event:
     return Event(
         raw=message,
@@ -30,6 +31,7 @@ def _event(message: str, ts: datetime | None = None, **parsed) -> Event:
 
 def _make_rule(match: list[dict], agg: dict | None = None, level: str = "high") -> Rule:
     from log_analyzer.rules.loader import _load_one
+
     data = {
         "id": "test_rule",
         "title": "Test Rule",
@@ -44,6 +46,7 @@ def _make_rule(match: list[dict], agg: dict | None = None, level: str = "high") 
 # ---------------------------------------------------------------------------
 # Field resolution
 # ---------------------------------------------------------------------------
+
 
 class TestGetField:
     def test_message(self):
@@ -63,6 +66,7 @@ class TestGetField:
 # Simple rule matching
 # ---------------------------------------------------------------------------
 
+
 class TestSimpleMatching:
     def test_contains_match(self):
         rule = _make_rule([{"field": "message", "op": "contains", "value": "Failed password"}])
@@ -81,10 +85,12 @@ class TestSimpleMatching:
         assert len(engine.process(_event("x", status=404))) == 1
 
     def test_multiple_conditions_all_must_match(self):
-        rule = _make_rule([
-            {"field": "message", "op": "contains", "value": "sudo"},
-            {"field": "message", "op": "contains", "value": "USER=root"},
-        ])
+        rule = _make_rule(
+            [
+                {"field": "message", "op": "contains", "value": "sudo"},
+                {"field": "message", "op": "contains", "value": "USER=root"},
+            ]
+        )
         engine = RuleEngine([rule])
         assert engine.process(_event("sudo without root")) == []
         assert len(engine.process(_event("sudo USER=root COMMAND=ls"))) == 1
@@ -105,6 +111,7 @@ class TestSimpleMatching:
 # ---------------------------------------------------------------------------
 # Aggregate rules
 # ---------------------------------------------------------------------------
+
 
 class TestAggregateRules:
     def _ssh_rule(self) -> Rule:
@@ -159,15 +166,14 @@ class TestAggregateRules:
         findings = []
         for i in range(6):
             ts = base + timedelta(seconds=i * 5)
-            findings += engine.process(
-                _event("Failed password from ip_xxx port 22", ts=ts)
-            )
+            findings += engine.process(_event("Failed password from ip_xxx port 22", ts=ts))
         assert len(findings) == 1  # only one despite 6 matching events
 
 
 # ---------------------------------------------------------------------------
 # RuleLoader
 # ---------------------------------------------------------------------------
+
 
 class TestRuleLoader:
     def test_load_builtin_rules(self):
@@ -212,6 +218,7 @@ detection:
 # Sigma loader
 # ---------------------------------------------------------------------------
 
+
 class TestSigmaLoader:
     def _sigma_rule(self, tmp_path, content: str) -> Path:
         p = tmp_path / "sigma_rule.yml"
@@ -219,7 +226,9 @@ class TestSigmaLoader:
         return p
 
     def test_basic_sigma_rule(self, tmp_path):
-        p = self._sigma_rule(tmp_path, """
+        p = self._sigma_rule(
+            tmp_path,
+            """
 title: SSH Brute Force
 id: test-sigma-ssh
 level: high
@@ -229,14 +238,17 @@ detection:
   selection:
     message|contains: 'Failed password'
   condition: selection
-""")
+""",
+        )
         rule = load_sigma_file(p)
         assert rule.id == "test-sigma-ssh"
         assert rule.level == FindingSeverity.HIGH
         assert any(c.op == "contains" for c in rule.match)
 
     def test_sigma_with_count_aggregate(self, tmp_path):
-        p = self._sigma_rule(tmp_path, """
+        p = self._sigma_rule(
+            tmp_path,
+            """
 title: Many Failures
 id: test-sigma-agg
 level: high
@@ -247,7 +259,8 @@ detection:
     message|contains: 'Failed'
   timeframe: 5m
   condition: selection | count() > 10
-""")
+""",
+        )
         rule = load_sigma_file(p)
         assert rule.aggregate is not None
         assert rule.aggregate.count_val == 10
@@ -255,7 +268,9 @@ detection:
         assert rule.aggregate.timeframe_seconds == 300
 
     def test_sigma_logsource_mapped(self, tmp_path):
-        p = self._sigma_rule(tmp_path, """
+        p = self._sigma_rule(
+            tmp_path,
+            """
 title: Web Errors
 id: test-sigma-web
 level: medium
@@ -265,12 +280,15 @@ detection:
   selection:
     message|contains: 'error'
   condition: selection
-""")
+""",
+        )
         rule = load_sigma_file(p)
         assert "nginx_combined" in (rule.logsource_formats or [])
 
     def test_sigma_windows_logsource(self, tmp_path):
-        p = self._sigma_rule(tmp_path, """
+        p = self._sigma_rule(
+            tmp_path,
+            """
 title: Windows Event
 id: test-sigma-win
 level: medium
@@ -280,13 +298,16 @@ detection:
   selection:
     EventID: 4625
   condition: selection
-""")
+""",
+        )
         rule = load_sigma_file(p)
         assert "evtx" in (rule.logsource_formats or [])
         assert any(c.field == "parsed_fields.event_id" for c in rule.match)
 
     def test_sigma_count_by_field(self, tmp_path):
-        p = self._sigma_rule(tmp_path, """
+        p = self._sigma_rule(
+            tmp_path,
+            """
 title: Brute Force by IP
 id: test-sigma-grp
 level: high
@@ -297,7 +318,8 @@ detection:
     message|contains: 'Failed'
   timeframe: 10m
   condition: selection | count() by IpAddress > 5
-""")
+""",
+        )
         rule = load_sigma_file(p)
         assert rule.aggregate is not None
         assert rule.aggregate.group_by == "parsed_fields.ip_address"

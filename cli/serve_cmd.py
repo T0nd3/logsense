@@ -1,4 +1,5 @@
 """CLI command: analyzer serve — starts the LogSense web dashboard."""
+
 from __future__ import annotations
 
 import os
@@ -12,7 +13,9 @@ def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Host to bind to."),
     port: int = typer.Option(8080, "--port", "-p", help="Port to listen on."),
     config: Optional[Path] = typer.Option(None, "--config", "-c", help="Config file path."),
-    reload: bool = typer.Option(False, "--reload", help="Auto-reload on source changes (dev mode)."),
+    reload: bool = typer.Option(
+        False, "--reload", help="Auto-reload on source changes (dev mode)."
+    ),
 ) -> None:
     """Start the LogSense web dashboard.
 

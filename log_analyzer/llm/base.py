@@ -5,6 +5,7 @@ AbstractLLMClient and implement the two abstract methods.  Optional capabilities
 (embeddings, model listing) have no-op defaults so providers that don't support
 them degrade gracefully rather than crashing.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -13,7 +14,7 @@ from collections.abc import Iterator
 
 class AbstractLLMClient(ABC):
     # Subclasses override these class-level attributes
-    is_cloud: bool = False      # True → data leaves the machine
+    is_cloud: bool = False  # True → data leaves the machine
     provider_name: str = "unknown"
 
     # ------------------------------------------------------------------

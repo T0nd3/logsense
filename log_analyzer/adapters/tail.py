@@ -10,6 +10,7 @@ Behaviour
   and waits until the path reappears.
 - Detects log format from an initial sample so the correct parser is used.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -21,8 +22,8 @@ from ..parsers.detector import FormatDetector, LogFormat
 from ..parsers.registry import get_parser
 from .base import SourceAdapter
 
-_SAMPLE_LINES = 10       # lines used for format detection
-_DEFAULT_POLL = 0.2      # seconds between polls when no new data arrives
+_SAMPLE_LINES = 10  # lines used for format detection
+_DEFAULT_POLL = 0.2  # seconds between polls when no new data arrives
 
 
 class TailAdapter(SourceAdapter):
@@ -55,9 +56,7 @@ class TailAdapter(SourceAdapter):
                 # ── open / reopen ──────────────────────────────────────
                 if f is None:
                     try:
-                        f = open(
-                            self.path, encoding="utf-8", errors="replace"
-                        )
+                        f = open(self.path, encoding="utf-8", errors="replace")
                         if first_open and not self.from_start:
                             f.seek(0, 2)  # seek to end on very first open
                         first_open = False

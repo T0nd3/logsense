@@ -6,6 +6,7 @@ Two separate clients are returned:
 
 They may be the same object (Ollama) or different (Claude text + Ollama embed).
 """
+
 from __future__ import annotations
 
 import os
@@ -15,18 +16,18 @@ from .base import AbstractLLMClient
 
 # Known default endpoints per provider
 _DEFAULT_ENDPOINTS: dict[str, str] = {
-    "openai":    "https://api.openai.com",
-    "groq":      "https://api.groq.com/openai",
-    "mistral":   "https://api.mistral.ai",
+    "openai": "https://api.openai.com",
+    "groq": "https://api.groq.com/openai",
+    "mistral": "https://api.mistral.ai",
     "lm_studio": "http://localhost:1234",
-    "ollama":    "http://localhost:11434",
+    "ollama": "http://localhost:11434",
 }
 
 # Env var names per provider (for API key lookup)
 _API_KEY_ENV: dict[str, list[str]] = {
-    "claude":  ["ANTHROPIC_API_KEY"],
-    "openai":  ["OPENAI_API_KEY"],
-    "groq":    ["GROQ_API_KEY"],
+    "claude": ["ANTHROPIC_API_KEY"],
+    "openai": ["OPENAI_API_KEY"],
+    "groq": ["GROQ_API_KEY"],
     "mistral": ["MISTRAL_API_KEY"],
 }
 
@@ -60,6 +61,7 @@ def _resolve_endpoint(provider: str, cfg_endpoint: str) -> str:
 # Text-generation client
 # ---------------------------------------------------------------------------
 
+
 def make_llm_client(cfg: LLMConfig) -> AbstractLLMClient:
     """Create a text-generation client from the LLM config section."""
     provider = cfg.provider.lower()
@@ -68,6 +70,7 @@ def make_llm_client(cfg: LLMConfig) -> AbstractLLMClient:
 
     if provider == "ollama":
         from .client import OllamaClient
+
         return OllamaClient(
             endpoint=endpoint,
             model=cfg.model,
@@ -78,6 +81,7 @@ def make_llm_client(cfg: LLMConfig) -> AbstractLLMClient:
 
     if provider == "claude":
         from .claude import ClaudeClient
+
         return ClaudeClient(
             api_key=api_key,
             model=cfg.model or "claude-haiku-4-5",
@@ -87,6 +91,7 @@ def make_llm_client(cfg: LLMConfig) -> AbstractLLMClient:
 
     if provider in ("openai", "groq", "mistral", "lm_studio", "openai_compat"):
         from .openai_compat import OpenAICompatibleClient
+
         return OpenAICompatibleClient(
             endpoint=endpoint,
             model=cfg.model or "gpt-4o-mini",
@@ -107,6 +112,7 @@ def make_llm_client(cfg: LLMConfig) -> AbstractLLMClient:
 # Embedding client (may differ from the text-generation client)
 # ---------------------------------------------------------------------------
 
+
 def make_embed_client(cfg: LLMConfig) -> AbstractLLMClient:
     """Create an embedding client.
 
@@ -119,6 +125,7 @@ def make_embed_client(cfg: LLMConfig) -> AbstractLLMClient:
 
     if embed_prov == "ollama":
         from .client import OllamaClient
+
         return OllamaClient(
             endpoint=_resolve_endpoint("ollama", cfg.endpoint),
             model=cfg.embed_model,
@@ -127,6 +134,7 @@ def make_embed_client(cfg: LLMConfig) -> AbstractLLMClient:
 
     if embed_prov in ("openai", "openai_compat"):
         from .openai_compat import OpenAICompatibleClient
+
         api_key = _resolve_api_key(embed_prov, cfg.api_key)
         return OpenAICompatibleClient(
             endpoint=_resolve_endpoint(embed_prov, cfg.endpoint),

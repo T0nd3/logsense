@@ -3,6 +3,7 @@
 Produces a structured security report from findings and errors stored in SQLite.
 The report is pure Markdown — no external dependencies required.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -101,8 +102,7 @@ def generate_report(
     if top_rules:
         lines += ["## Top Triggered Rules", ""]
         rule_rows = [
-            [_escape(r["rule_id"]), r["severity"].upper(), str(r["count"])]
-            for r in top_rules
+            [_escape(r["rule_id"]), r["severity"].upper(), str(r["count"])] for r in top_rules
         ]
         lines += [_md_table(["Rule ID", "Severity", "Count"], rule_rows), ""]
 

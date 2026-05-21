@@ -12,6 +12,7 @@ Unsupported (raises SigmaConversionError):
   - near / sequence conditions
   - fieldref / cidr modifiers
 """
+
 from __future__ import annotations
 
 import re
@@ -155,10 +156,10 @@ def _parse_field_expr(expr: str) -> tuple[str, str]:
 
 # Matches: "selection | count() by FieldName > 5"
 _AGG_RE = re.compile(
-    r'(\w+)\s*\|\s*count\(\)\s*(?:by\s+(\w+))?\s*([><=!]+)\s*(\d+)',
+    r"(\w+)\s*\|\s*count\(\)\s*(?:by\s+(\w+))?\s*([><=!]+)\s*(\d+)",
     re.IGNORECASE,
 )
-_TIMEFRAME_RE = re.compile(r'(\d+)([smhd])')
+_TIMEFRAME_RE = re.compile(r"(\d+)([smhd])")
 
 
 def _parse_aggregate_condition(condition_str: str, det: dict) -> AggregateCondition | None:
@@ -172,9 +173,15 @@ def _parse_aggregate_condition(condition_str: str, det: dict) -> AggregateCondit
     tf_m = _TIMEFRAME_RE.match(timeframe_str)
     if not tf_m:
         raise SigmaConversionError(f"Cannot parse timeframe '{timeframe_str}'")
-    timeframe_seconds = int(tf_m.group(1)) * {"s": 1, "m": 60, "h": 3600, "d": 86400}[tf_m.group(2)]
+    timeframe_seconds = (
+        int(tf_m.group(1)) * {"s": 1, "m": 60, "h": 3600, "d": 86400}[tf_m.group(2)]
+    )
 
-    group_by = _FIELD_MAP.get(group_field, f"parsed_fields.{group_field.lower()}") if group_field else None
+    group_by = (
+        _FIELD_MAP.get(group_field, f"parsed_fields.{group_field.lower()}")
+        if group_field
+        else None
+    )
 
     return AggregateCondition(
         count_op=op,

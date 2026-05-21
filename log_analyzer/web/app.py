@@ -1,4 +1,5 @@
 """FastAPI application factory for the LogSense web dashboard."""
+
 from __future__ import annotations
 
 import os

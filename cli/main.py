@@ -111,31 +111,46 @@ def _detect_format_name(adapter) -> str:
 # scan
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def scan(
-    path: Annotated[Optional[Path], typer.Argument(help="Log file to scan. Use '-' for stdin.")] = None,
+    path: Annotated[
+        Optional[Path], typer.Argument(help="Log file to scan. Use '-' for stdin.")
+    ] = None,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
     redact: Annotated[RedactModeArg, typer.Option("--redact")] = RedactModeArg.redact,
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max events to display.")] = 50,
     show_all: Annotated[bool, typer.Option("--all")] = False,
     format_only: Annotated[bool, typer.Option("--format-only")] = False,
     no_rules: Annotated[bool, typer.Option("--no-rules", help="Skip rule engine.")] = False,
-    rules_dir: Annotated[Optional[Path], typer.Option("--rules-dir", help="Extra rules directory.")] = None,
-    track_errors: Annotated[bool, typer.Option("--track-errors", help="Persist errors to SQLite DB.")] = False,
+    rules_dir: Annotated[
+        Optional[Path], typer.Option("--rules-dir", help="Extra rules directory.")
+    ] = None,
+    track_errors: Annotated[
+        bool, typer.Option("--track-errors", help="Persist errors to SQLite DB.")
+    ] = False,
     detect_anomalies: Annotated[
-        bool, typer.Option("--detect-anomalies", help="Run statistical anomaly detection against baseline.")
+        bool,
+        typer.Option(
+            "--detect-anomalies", help="Run statistical anomaly detection against baseline."
+        ),
     ] = False,
     anomaly_source: Annotated[
-        Optional[str], typer.Option("--anomaly-source", help="Baseline source key (default: file stem).")
+        Optional[str],
+        typer.Option("--anomaly-source", help="Baseline source key (default: file stem)."),
     ] = None,
     anomaly_threshold: Annotated[
         float, typer.Option("--anomaly-threshold", help="Z-score threshold for anomaly alerts.")
     ] = 3.0,
     explain_findings: Annotated[
-        bool, typer.Option("--explain-findings", help="Ask LLM to explain HIGH/CRITICAL findings after scan.")
+        bool,
+        typer.Option(
+            "--explain-findings", help="Ask LLM to explain HIGH/CRITICAL findings after scan."
+        ),
     ] = False,
     classify: Annotated[
-        bool, typer.Option("--classify", help="Ask LLM to classify a sample of events by severity.")
+        bool,
+        typer.Option("--classify", help="Ask LLM to classify a sample of events by severity."),
     ] = False,
 ) -> None:
     """Parse a log file, redact PII, run detection rules, and optionally track errors."""
@@ -241,7 +256,9 @@ def scan(
                 )
                 anomaly_findings = anomaly_results_to_findings(anomaly_results, source_key)
                 findings.extend(anomaly_findings)
-                anomaly_mode_msg = f"  Anomaly  : {len(anomaly_findings)} finding(s) (source: {source_key})\n"
+                anomaly_mode_msg = (
+                    f"  Anomaly  : {len(anomaly_findings)} finding(s) (source: {source_key})\n"
+                )
             else:
                 n_obs = len(all_fds)
                 anomaly_mode_msg = (
@@ -254,10 +271,7 @@ def scan(
     # ------------------------------------------------------------------
     if findings:
         with DismissRepository(cfg.db_path) as d_repo:
-            findings = [
-                f for f in findings
-                if not d_repo.is_dismissed(f.rule_id, f.source)
-            ]
+            findings = [f for f in findings if not d_repo.is_dismissed(f.rule_id, f.source)]
 
     # ------------------------------------------------------------------
     # Finding persistence (Option B) — only when --track-errors is active
@@ -282,7 +296,11 @@ def scan(
         f"  Events   : {len(events):,}\n"
         f"  PII hits : {pii_hits_total:,} (mode: {redact.value})\n"
         f"  Findings : {len(findings):,}"
-        + (f"  ({findings_tracked} new ≥{cfg.findings_min_severity} saved)" if track_errors else "")
+        + (
+            f"  ({findings_tracked} new ≥{cfg.findings_min_severity} saved)"
+            if track_errors
+            else ""
+        )
         + "\n"
         + (f"  Errors   : {errors_tracked:,} tracked to {cfg.db_path}\n" if track_errors else "")
         + anomaly_mode_msg
@@ -306,9 +324,7 @@ def scan(
         typer.echo(f"\n  Findings ({len(findings)}):\n")
         for finding in findings:
             color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
-            typer.echo(
-                typer.style(_format_finding(finding), fg=color)
-            )
+            typer.echo(typer.style(_format_finding(finding), fg=color))
     elif not no_rules:
         typer.echo("\n  No findings.")
 
@@ -319,10 +335,9 @@ def scan(
         from log_analyzer.llm.factory import make_llm_client
         from log_analyzer.llm.prompts import explain_finding_prompt
 
-        priority = [
-            f for f in findings
-            if f.severity.value in ("high", "critical")
-        ][:3]  # cap at 3 to stay within reasonable time
+        priority = [f for f in findings if f.severity.value in ("high", "critical")][
+            :3
+        ]  # cap at 3 to stay within reasonable time
 
         if not priority:
             typer.echo("\n  --explain-findings: no high/critical findings to explain.")
@@ -399,6 +414,7 @@ def scan(
 # rules list
 # ---------------------------------------------------------------------------
 
+
 @rules_app.command("list")
 def rules_list(
     rules_dir: Annotated[Optional[Path], typer.Option("--rules-dir")] = None,
@@ -413,7 +429,7 @@ def rules_list(
         return
 
     typer.echo(f"\n  {'ID':<30} {'LEVEL':<10} {'TITLE'}")
-    typer.echo(f"  {'-'*30} {'-'*10} {'-'*35}")
+    typer.echo(f"  {'-' * 30} {'-' * 10} {'-' * 35}")
     for rule in sorted(all_rules, key=lambda r: r.id):
         color = SEVERITY_COLOR.get(rule.level.value, typer.colors.WHITE)
         level_str = typer.style(rule.level.value.upper().ljust(10), fg=color)
@@ -424,6 +440,7 @@ def rules_list(
 # ---------------------------------------------------------------------------
 # rules validate
 # ---------------------------------------------------------------------------
+
 
 @rules_app.command("validate")
 def rules_validate(
@@ -450,22 +467,27 @@ def rules_validate(
             raise typer.Exit(1)
         else:
             import yaml
+
             with open(file) as f:
                 data = yaml.safe_load(f)
-            typer.echo(typer.style(
-                f"OK  [{data.get('id', '?')}] {data.get('title', '?')}",
-                fg=typer.colors.GREEN,
-            ))
+            typer.echo(
+                typer.style(
+                    f"OK  [{data.get('id', '?')}] {data.get('title', '?')}",
+                    fg=typer.colors.GREEN,
+                )
+            )
 
 
 # ---------------------------------------------------------------------------
 # version
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def version() -> None:
     """Print version."""
     from log_analyzer import __version__
+
     typer.echo(f"log-analyzer {__version__}")
 
 

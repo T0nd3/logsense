@@ -37,9 +37,12 @@ def _fmt_ts(ts: str | None) -> str:
 # errors list
 # ---------------------------------------------------------------------------
 
+
 @app.command("list")
 def errors_list(
-    sort: Annotated[str, typer.Option("--sort", "-s", help="Sort by: count, last_seen, first_seen.")] = "count",
+    sort: Annotated[
+        str, typer.Option("--sort", "-s", help="Sort by: count, last_seen, first_seen.")
+    ] = "count",
     severity: Annotated[Optional[str], typer.Option("--severity")] = None,
     limit: Annotated[int, typer.Option("--limit", "-n")] = 30,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
@@ -58,7 +61,7 @@ def errors_list(
         f"({summary['total_occurrences']:,} total occurrences)\n"
     )
     typer.echo(f"  {'FINGERPRINT':<14} {'SEV':<10} {'COUNT':>6}  {'LAST SEEN':<20} TYPE")
-    typer.echo(f"  {'-'*14} {'-'*10} {'-'*6}  {'-'*20} {'-'*30}")
+    typer.echo(f"  {'-' * 14} {'-' * 10} {'-' * 6}  {'-' * 20} {'-' * 30}")
 
     for row in rows:
         color = _SEV_COLOR.get(row["severity"], typer.colors.WHITE)
@@ -72,6 +75,7 @@ def errors_list(
 # ---------------------------------------------------------------------------
 # errors show
 # ---------------------------------------------------------------------------
+
 
 @app.command("show")
 def errors_show(
@@ -116,6 +120,7 @@ def errors_show(
 # errors new
 # ---------------------------------------------------------------------------
 
+
 @app.command("new")
 def errors_new(
     since: Annotated[str, typer.Option("--since", help="Time window: '7d', '24h', '1h'.")] = "7d",
@@ -134,16 +139,21 @@ def errors_new(
     for row in rows:
         color = _SEV_COLOR.get(row["severity"], typer.colors.WHITE)
         sev = typer.style(row["severity"].upper().ljust(9), fg=color)
-        typer.echo(f"  {row['fingerprint']}  {sev}  {row['error_type']}  (first: {_fmt_ts(row['first_seen'])})")
+        typer.echo(
+            f"  {row['fingerprint']}  {sev}  {row['error_type']}  (first: {_fmt_ts(row['first_seen'])})"
+        )
 
 
 # ---------------------------------------------------------------------------
 # errors regression
 # ---------------------------------------------------------------------------
 
+
 @app.command("regression")
 def errors_regression(
-    gap: Annotated[str, typer.Option("--gap", help="Minimum silence gap to qualify as regression.")] = "24h",
+    gap: Annotated[
+        str, typer.Option("--gap", help="Minimum silence gap to qualify as regression.")
+    ] = "24h",
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
     """Show errors that reappeared after a silence period (regressions)."""
@@ -174,6 +184,7 @@ _UNIT_HOURS = {"s": 1 / 3600, "m": 1 / 60, "h": 1, "d": 24}
 
 def _parse_hours(s: str) -> int:
     import re
+
     m = re.match(r"^(\d+)([smhd])$", s.strip())
     if not m:
         typer.echo(f"Invalid time spec '{s}'. Use e.g. 24h, 7d, 30m.", err=True)

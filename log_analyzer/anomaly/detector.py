@@ -9,6 +9,7 @@ Isolation Forest is used automatically when scikit-learn is installed and the
 baseline has enough observations (>= 20 buckets).  Results from both methods
 are merged — whichever flags a bucket first wins.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -25,6 +26,7 @@ _IF_MIN_BUCKETS = 20  # Isolation Forest needs more data than z-score
 # Severity mapping
 # ---------------------------------------------------------------------------
 
+
 def _severity_for_zscore(z: float) -> FindingSeverity:
     az = abs(z)
     if az >= 7.0:
@@ -40,6 +42,7 @@ def _severity_for_zscore(z: float) -> FindingSeverity:
 # Result type
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AnomalyResult:
     bucket: TimeBucket
@@ -47,13 +50,14 @@ class AnomalyResult:
     max_zscore: float
     anomalous_features: list[str]
     severity: FindingSeverity
-    confidence: float       # 0.0–1.0
+    confidence: float  # 0.0–1.0
     method: str = "zscore"  # "zscore" | "isolation_forest"
 
 
 # ---------------------------------------------------------------------------
 # Z-score detection
 # ---------------------------------------------------------------------------
+
 
 def _zscore_detect(
     buckets: list[TimeBucket],
@@ -70,21 +74,24 @@ def _zscore_detect(
         max_z = max(abs(zs[name]) for name in anomalous)
         # Confidence scales linearly from threshold to 2*threshold → 0..1
         confidence = min(1.0, (max_z - threshold) / max(threshold, 1e-10))
-        results.append(AnomalyResult(
-            bucket=bucket,
-            zscores=zs,
-            max_zscore=max_z,
-            anomalous_features=anomalous,
-            severity=_severity_for_zscore(max_z),
-            confidence=round(confidence, 3),
-            method="zscore",
-        ))
+        results.append(
+            AnomalyResult(
+                bucket=bucket,
+                zscores=zs,
+                max_zscore=max_z,
+                anomalous_features=anomalous,
+                severity=_severity_for_zscore(max_z),
+                confidence=round(confidence, 3),
+                method="zscore",
+            )
+        )
     return results
 
 
 # ---------------------------------------------------------------------------
 # Isolation Forest (optional)
 # ---------------------------------------------------------------------------
+
 
 def _if_available() -> bool:
     return importlib.util.find_spec("sklearn") is not None
@@ -133,21 +140,24 @@ def _if_detect(
             sev = FindingSeverity.MEDIUM
         else:
             sev = FindingSeverity.LOW
-        results.append(AnomalyResult(
-            bucket=bucket,
-            zscores={},           # IF doesn't give per-feature z-scores
-            max_zscore=abs(score) * 10,  # pseudo-z for display
-            anomalous_features=feature_names,
-            severity=sev,
-            confidence=round(confidence, 3),
-            method="isolation_forest",
-        ))
+        results.append(
+            AnomalyResult(
+                bucket=bucket,
+                zscores={},  # IF doesn't give per-feature z-scores
+                max_zscore=abs(score) * 10,  # pseudo-z for display
+                anomalous_features=feature_names,
+                severity=sev,
+                confidence=round(confidence, 3),
+                method="isolation_forest",
+            )
+        )
     return results
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def detect_anomalies(
     buckets: list[TimeBucket],
@@ -204,9 +214,7 @@ def anomaly_results_to_findings(
             )
             others = [f for f in r.anomalous_features if f != top_feat]
             if others:
-                other_str = ", ".join(
-                    f"{f} ({r.zscores.get(f, 0):+.1f}σ)" for f in others[:3]
-                )
+                other_str = ", ".join(f"{f} ({r.zscores.get(f, 0):+.1f}σ)" for f in others[:3])
                 message += f"  [{other_str}]"
         else:
             message = (
@@ -214,21 +222,23 @@ def anomaly_results_to_findings(
                 f"(confidence {r.confidence:.0%})"
             )
 
-        findings.append(Finding(
-            rule_id=f"anomaly.{r.method}",
-            severity=r.severity,
-            message=message,
-            source=source,
-            timestamp=r.bucket.ts,
-            events=[],
-            details={
-                "bucket_ts": r.bucket.ts.isoformat(),
-                "method": r.method,
-                "max_zscore": round(r.max_zscore, 2),
-                "confidence": r.confidence,
-                "anomalous_features": r.anomalous_features,
-                "zscores": {k: round(v, 2) for k, v in r.zscores.items()},
-                "features": r.bucket.to_feature_dict(),
-            },
-        ))
+        findings.append(
+            Finding(
+                rule_id=f"anomaly.{r.method}",
+                severity=r.severity,
+                message=message,
+                source=source,
+                timestamp=r.bucket.ts,
+                events=[],
+                details={
+                    "bucket_ts": r.bucket.ts.isoformat(),
+                    "method": r.method,
+                    "max_zscore": round(r.max_zscore, 2),
+                    "confidence": r.confidence,
+                    "anomalous_features": r.anomalous_features,
+                    "zscores": {k: round(v, 2) for k, v in r.zscores.items()},
+                    "features": r.bucket.to_feature_dict(),
+                },
+            )
+        )
     return findings

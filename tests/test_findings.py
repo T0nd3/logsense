@@ -1,4 +1,5 @@
 """Tests for Finding persistence — FindingsRepository and meets_min_severity."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -13,6 +14,7 @@ from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_sev
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _ts(offset_hours: int = 0) -> datetime:
     return datetime.now(tz=UTC) + timedelta(hours=offset_hours)
@@ -57,6 +59,7 @@ def repo(tmp_path: Path) -> FindingsRepository:
 # ---------------------------------------------------------------------------
 # meets_min_severity
 # ---------------------------------------------------------------------------
+
 
 class TestMeetsMinSeverity:
     def test_critical_meets_high(self):
@@ -107,6 +110,7 @@ class TestMeetsMinSeverity:
 # FindingsRepository — lifecycle
 # ---------------------------------------------------------------------------
 
+
 class TestRepositoryLifecycle:
     def test_open_creates_table(self, tmp_path: Path):
         db = tmp_path / "test.db"
@@ -132,6 +136,7 @@ class TestRepositoryLifecycle:
 # ---------------------------------------------------------------------------
 # add_findings
 # ---------------------------------------------------------------------------
+
 
 class TestAddFindings:
     def test_insert_single(self, repo: FindingsRepository):
@@ -197,6 +202,7 @@ class TestAddFindings:
 # cleanup_old
 # ---------------------------------------------------------------------------
 
+
 class TestCleanupOld:
     def _insert_old(self, repo: FindingsRepository, days_ago: int) -> None:
         """Directly insert a finding with a past created_at timestamp."""
@@ -245,26 +251,31 @@ class TestCleanupOld:
 # list_findings
 # ---------------------------------------------------------------------------
 
+
 class TestListFindings:
     def test_returns_all_by_default(self, repo: FindingsRepository):
         repo.add_findings([_finding(rule_id=f"R{i}") for i in range(3)])
         assert len(repo.list_findings()) == 3
 
     def test_filter_by_severity(self, repo: FindingsRepository):
-        repo.add_findings([
-            _finding(rule_id="R1", severity=FindingSeverity.HIGH),
-            _finding(rule_id="R2", severity=FindingSeverity.CRITICAL),
-            _finding(rule_id="R3", severity=FindingSeverity.LOW),
-        ])
+        repo.add_findings(
+            [
+                _finding(rule_id="R1", severity=FindingSeverity.HIGH),
+                _finding(rule_id="R2", severity=FindingSeverity.CRITICAL),
+                _finding(rule_id="R3", severity=FindingSeverity.LOW),
+            ]
+        )
         rows = repo.list_findings(severity="high")
         assert len(rows) == 1
         assert rows[0]["rule_id"] == "R1"
 
     def test_filter_by_source(self, repo: FindingsRepository):
-        repo.add_findings([
-            _finding(rule_id="R1", source="app.log"),
-            _finding(rule_id="R2", source="access.log"),
-        ])
+        repo.add_findings(
+            [
+                _finding(rule_id="R1", source="app.log"),
+                _finding(rule_id="R2", source="access.log"),
+            ]
+        )
         rows = repo.list_findings(source="app.log")
         assert len(rows) == 1
 
@@ -290,6 +301,7 @@ class TestListFindings:
 # recent_findings
 # ---------------------------------------------------------------------------
 
+
 class TestRecentFindings:
     def _insert_at(self, repo: FindingsRepository, rule_id: str, hours_ago: int) -> None:
         assert repo._conn
@@ -314,9 +326,7 @@ class TestRecentFindings:
     def test_severity_filter(self, repo: FindingsRepository):
         self._insert_at(repo, "HIGH_R", hours_ago=1)
         assert repo._conn
-        repo._conn.execute(
-            "UPDATE findings SET severity = 'critical' WHERE rule_id = 'HIGH_R'"
-        )
+        repo._conn.execute("UPDATE findings SET severity = 'critical' WHERE rule_id = 'HIGH_R'")
         repo._conn.commit()
         rows = repo.recent_findings(since_hours=24, severity="high")
         assert len(rows) == 0
@@ -326,26 +336,31 @@ class TestRecentFindings:
 # count_by_rule
 # ---------------------------------------------------------------------------
 
+
 class TestCountByRule:
     def test_counts_correctly(self, repo: FindingsRepository):
         # Two findings for R1 at different timestamps, one for R2
-        repo.add_findings([
-            _finding(rule_id="R1", ts=_ts(0)),
-            _finding(rule_id="R1", ts=_ts(1)),
-            _finding(rule_id="R2", ts=_ts(0)),
-        ])
+        repo.add_findings(
+            [
+                _finding(rule_id="R1", ts=_ts(0)),
+                _finding(rule_id="R1", ts=_ts(1)),
+                _finding(rule_id="R2", ts=_ts(0)),
+            ]
+        )
         rows = repo.count_by_rule()
         counts = {r["rule_id"]: r["count"] for r in rows}
         assert counts["R1"] == 2
         assert counts["R2"] == 1
 
     def test_ordered_by_count_desc(self, repo: FindingsRepository):
-        repo.add_findings([
-            _finding(rule_id="RARE", ts=_ts(0)),
-            _finding(rule_id="FREQ", ts=_ts(0)),
-            _finding(rule_id="FREQ", ts=_ts(1)),
-            _finding(rule_id="FREQ", ts=_ts(2)),
-        ])
+        repo.add_findings(
+            [
+                _finding(rule_id="RARE", ts=_ts(0)),
+                _finding(rule_id="FREQ", ts=_ts(0)),
+                _finding(rule_id="FREQ", ts=_ts(1)),
+                _finding(rule_id="FREQ", ts=_ts(2)),
+            ]
+        )
         rows = repo.count_by_rule()
         assert rows[0]["rule_id"] == "FREQ"
 
@@ -354,6 +369,7 @@ class TestCountByRule:
 # summary
 # ---------------------------------------------------------------------------
 
+
 class TestSummary:
     def test_empty_db(self, repo: FindingsRepository):
         s = repo.summary()
@@ -361,11 +377,13 @@ class TestSummary:
         assert s["by_severity"] == {}
 
     def test_summary_counts(self, repo: FindingsRepository):
-        repo.add_findings([
-            _finding(rule_id="R1", severity=FindingSeverity.HIGH),
-            _finding(rule_id="R2", severity=FindingSeverity.HIGH, ts=_ts(1)),
-            _finding(rule_id="R3", severity=FindingSeverity.CRITICAL),
-        ])
+        repo.add_findings(
+            [
+                _finding(rule_id="R1", severity=FindingSeverity.HIGH),
+                _finding(rule_id="R2", severity=FindingSeverity.HIGH, ts=_ts(1)),
+                _finding(rule_id="R3", severity=FindingSeverity.CRITICAL),
+            ]
+        )
         s = repo.summary()
         assert s["total"] == 3
         assert s["by_severity"]["high"] == 2

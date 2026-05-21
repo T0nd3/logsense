@@ -16,11 +16,11 @@ from log_analyzer.llm.prompts import (
 from log_analyzer.llm.retrieval import build_chroma_index, retrieve_context
 from log_analyzer.storage.errors_repo import ErrorsRepository
 
-app = typer.Typer(help="LLM-powered log analysis. Supports Ollama, Claude, and OpenAI-compatible APIs.")
-
-_CLOUD_WARNING = (
-    "  [!] Cloud provider — log data (PII-redacted) will be sent to an external API."
+app = typer.Typer(
+    help="LLM-powered log analysis. Supports Ollama, Claude, and OpenAI-compatible APIs."
 )
+
+_CLOUD_WARNING = "  [!] Cloud provider — log data (PII-redacted) will be sent to an external API."
 
 
 def _make_client(cfg: Config) -> AbstractLLMClient:
@@ -51,6 +51,7 @@ def _chroma_path(cfg: Config) -> Path:
 # llm info
 # ---------------------------------------------------------------------------
 
+
 @app.command("info")
 def llm_info(
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
@@ -63,7 +64,9 @@ def llm_info(
     typer.echo(f"\n{sep}")
     typer.echo(f"  Provider : {cfg.llm.provider}")
     typer.echo(f"  Model    : {cfg.llm.model}")
-    typer.echo(f"  Embed    : {cfg.llm.embed_model} (via {cfg.llm.embed_provider or cfg.llm.provider})")
+    typer.echo(
+        f"  Embed    : {cfg.llm.embed_model} (via {cfg.llm.embed_provider or cfg.llm.provider})"
+    )
 
     if client.is_cloud:
         typer.echo(
@@ -97,9 +100,12 @@ def llm_info(
 # llm explain <fingerprint>
 # ---------------------------------------------------------------------------
 
+
 @app.command("explain")
 def llm_explain(
-    fingerprint: Annotated[str, typer.Argument(help="Error fingerprint from 'analyzer errors list'.")],
+    fingerprint: Annotated[
+        str, typer.Argument(help="Error fingerprint from 'analyzer errors list'.")
+    ],
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
     """Ask the LLM to explain a tracked error in plain language."""
@@ -136,9 +142,12 @@ def llm_explain(
 # llm summarize
 # ---------------------------------------------------------------------------
 
+
 @app.command("summarize")
 def llm_summarize(
-    since: Annotated[str, typer.Option("--since", "-s", help="Time window: '7d', '24h', '1h'.")] = "24h",
+    since: Annotated[
+        str, typer.Option("--since", "-s", help="Time window: '7d', '24h', '1h'.")
+    ] = "24h",
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max errors to include.")] = 10,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
@@ -176,11 +185,14 @@ def llm_summarize(
 # llm ask
 # ---------------------------------------------------------------------------
 
+
 @app.command("ask")
 def llm_ask(
     question: Annotated[str, typer.Argument(help="Natural language question about your logs.")],
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
-    no_vector: Annotated[bool, typer.Option("--no-vector", help="Skip ChromaDB vector search.")] = False,
+    no_vector: Annotated[
+        bool, typer.Option("--no-vector", help="Skip ChromaDB vector search.")
+    ] = False,
 ) -> None:
     """Ask a question about your findings and errors (RAG over local SQLite)."""
     cfg = Config.load(config)
@@ -218,6 +230,7 @@ def llm_ask(
 # ---------------------------------------------------------------------------
 # llm index  (build ChromaDB vector index)
 # ---------------------------------------------------------------------------
+
 
 @app.command("index")
 def llm_index(
@@ -261,6 +274,7 @@ _UNIT_HOURS = {"s": 1 / 3600, "m": 1 / 60, "h": 1, "d": 24}
 
 def _parse_hours(s: str) -> int:
     import re
+
     m = re.match(r"^(\d+)([smhd])$", s.strip())
     if not m:
         typer.echo(f"Invalid time spec '{s}'. Use e.g. 24h, 7d.", err=True)

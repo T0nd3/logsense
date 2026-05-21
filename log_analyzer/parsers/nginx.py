@@ -8,13 +8,13 @@ from .base import BaseParser
 
 # Nginx/Apache Combined Log Format
 _COMBINED_RE = re.compile(
-    r'(?P<remote_addr>\S+) '
-    r'(?P<ident>\S+) '
-    r'(?P<auth>\S+) '
-    r'\[(?P<time>[^\]]+)\] '
+    r"(?P<remote_addr>\S+) "
+    r"(?P<ident>\S+) "
+    r"(?P<auth>\S+) "
+    r"\[(?P<time>[^\]]+)\] "
     r'"(?P<request>[^"]*)" '
-    r'(?P<status>\d{3}) '
-    r'(?P<bytes>\d+|-)'
+    r"(?P<status>\d{3}) "
+    r"(?P<bytes>\d+|-)"
     r'(?: "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)")?'
 )
 
@@ -46,7 +46,7 @@ class NginxCombinedParser(BaseParser):
         except ValueError:
             pass
 
-        message = f'{fields["request"]} -> {status}'
+        message = f"{fields['request']} -> {status}"
 
         return Event(
             raw=stripped,

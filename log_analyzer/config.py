@@ -57,8 +57,8 @@ class LLMConfig:
     max_context_tokens: int = 8000
     embed_model: str = "nomic-embed-text"
     # Cloud / API-key providers
-    api_key: str | None = None          # loaded from env if not in config
-    embed_provider: str | None = None   # if None, same as provider
+    api_key: str | None = None  # loaded from env if not in config
+    embed_provider: str | None = None  # if None, same as provider
 
 
 @dataclass
@@ -69,7 +69,7 @@ class Config:
     db_path: Path = field(default_factory=lambda: Path("log_analyzer.db"))
     pii_salt: str = ""
     # Finding persistence (Option B)
-    findings_retention_days: int = 30   # auto-cleanup older than N days
+    findings_retention_days: int = 30  # auto-cleanup older than N days
     findings_min_severity: str = "high"  # "low" | "medium" | "high" | "critical"
     # REST API auth — None means auth disabled (local dev)
     api_token: str | None = None
@@ -91,20 +91,13 @@ class Config:
             temperature=float(llm_data.get("temperature", 0.1)),
             max_context_tokens=int(llm_data.get("max_context_tokens", 8000)),
             embed_model=llm_data.get("embed_model", "nomic-embed-text"),
-            api_key=llm_data.get("api_key"),          # env-var fallback handled in factory
+            api_key=llm_data.get("api_key"),  # env-var fallback handled in factory
             embed_provider=llm_data.get("embed_provider"),
         )
 
-        salt = (
-            os.environ.get("LOG_ANALYZER_PII_SALT")
-            or data.get("pii_salt", "")
-        )
+        salt = os.environ.get("LOG_ANALYZER_PII_SALT") or data.get("pii_salt", "")
 
-        api_token = (
-            os.environ.get("LOG_ANALYZER_API_TOKEN")
-            or data.get("api_token")
-            or None
-        )
+        api_token = os.environ.get("LOG_ANALYZER_API_TOKEN") or data.get("api_token") or None
 
         return cls(
             llm=llm,

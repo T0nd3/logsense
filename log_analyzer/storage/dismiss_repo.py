@@ -1,4 +1,5 @@
 """Repository for dismissed (suppressed) rules — false-positive management."""
+
 from __future__ import annotations
 
 import sqlite3

@@ -1,4 +1,5 @@
 """Tests for cli/findings_cmd.py — findings list, show, summary."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -17,6 +18,7 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _ts(offset_hours: int = 0) -> datetime:
     return datetime.now(tz=UTC) + timedelta(hours=offset_hours)
@@ -40,12 +42,18 @@ def _finding(
 
 def _seed_db(db_path: Path) -> None:
     with FindingsRepository(db_path) as repo:
-        repo.add_findings([
-            _finding("SSH_BRUTE", FindingSeverity.CRITICAL, "auth.log", "SSH brute force"),
-            _finding("HIGH_RULE", FindingSeverity.HIGH, "app.log", "High severity event", _ts(1)),
-            _finding("MED_RULE", FindingSeverity.MEDIUM, "app.log", "Medium event", _ts(2)),
-            _finding("SSH_BRUTE", FindingSeverity.CRITICAL, "auth.log", "SSH brute force #2", _ts(3)),
-        ])
+        repo.add_findings(
+            [
+                _finding("SSH_BRUTE", FindingSeverity.CRITICAL, "auth.log", "SSH brute force"),
+                _finding(
+                    "HIGH_RULE", FindingSeverity.HIGH, "app.log", "High severity event", _ts(1)
+                ),
+                _finding("MED_RULE", FindingSeverity.MEDIUM, "app.log", "Medium event", _ts(2)),
+                _finding(
+                    "SSH_BRUTE", FindingSeverity.CRITICAL, "auth.log", "SSH brute force #2", _ts(3)
+                ),
+            ]
+        )
 
 
 @pytest.fixture()
@@ -74,6 +82,7 @@ def _cfg_args(db_path: Path) -> list[str]:
 # _parse_hours helper
 # ---------------------------------------------------------------------------
 
+
 class TestParseHours:
     def test_hours(self):
         assert _parse_hours("24h") == 24
@@ -87,6 +96,7 @@ class TestParseHours:
 
     def test_invalid_raises(self):
         import click
+
         with pytest.raises((SystemExit, click.exceptions.Exit)):
             _parse_hours("abc")
 
@@ -94,6 +104,7 @@ class TestParseHours:
 # ---------------------------------------------------------------------------
 # findings list
 # ---------------------------------------------------------------------------
+
 
 class TestFindingsList:
     def test_shows_findings(self, db: Path):
@@ -141,6 +152,7 @@ class TestFindingsList:
 # findings show
 # ---------------------------------------------------------------------------
 
+
 class TestFindingsShow:
     def test_show_existing_rule(self, db: Path):
         result = runner.invoke(app, ["show", "SSH_BRUTE"] + _cfg_args(db))
@@ -171,6 +183,7 @@ class TestFindingsShow:
 # ---------------------------------------------------------------------------
 # findings summary
 # ---------------------------------------------------------------------------
+
 
 class TestFindingsSummary:
     def test_shows_total(self, db: Path):

@@ -1,4 +1,5 @@
 """Plugin registry — collects rules and PII patterns contributed by plugins."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

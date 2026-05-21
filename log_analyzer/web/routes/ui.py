@@ -1,4 +1,5 @@
 """HTML page routes — full-page responses rendered via Jinja2."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
@@ -57,9 +58,7 @@ def upload_page(
     request: Request,
     templates: Jinja2Templates = Depends(get_templates),
 ) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request, "upload.html", {"active_page": "upload"}
-    )
+    return templates.TemplateResponse(request, "upload.html", {"active_page": "upload"})
 
 
 @router.get("/errors", response_class=HTMLResponse)

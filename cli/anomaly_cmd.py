@@ -28,11 +28,16 @@ def _open_repo(config_path: Path | None) -> BaselineRepository:
 # anomaly learn
 # ---------------------------------------------------------------------------
 
+
 @app.command("learn")
 def anomaly_learn(
     path: Annotated[Path, typer.Argument(help="Log file to feed into the baseline.")],
-    source_key: Annotated[Optional[str], typer.Option("--source", "-s", help="Source key (default: file stem).")] = None,
-    bucket_seconds: Annotated[int, typer.Option("--bucket", "-b", help="Time-bucket width in seconds.")] = 60,
+    source_key: Annotated[
+        Optional[str], typer.Option("--source", "-s", help="Source key (default: file stem).")
+    ] = None,
+    bucket_seconds: Annotated[
+        int, typer.Option("--bucket", "-b", help="Time-bucket width in seconds.")
+    ] = 60,
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
     """Feed a log file into the baseline (observe mode).
@@ -47,11 +52,14 @@ def anomaly_learn(
 
     key = source_key or path.stem
     cfg = Config.load(config)
-    redactor = PIIRedactor.from_config(salt=cfg.pii_salt, rules_path=cfg.pii_rules_path, mode=RedactMode.REDACT)
+    redactor = PIIRedactor.from_config(
+        salt=cfg.pii_salt, rules_path=cfg.pii_rules_path, mode=RedactMode.REDACT
+    )
 
     # --- Parse log file -------------------------------------------------------
     async def _collect():
         from log_analyzer.adapters.file import FileAdapter
+
         adapter = FileAdapter(path)
         evts = []
         async for ev in adapter.events():
@@ -106,6 +114,7 @@ def anomaly_learn(
 # anomaly status
 # ---------------------------------------------------------------------------
 
+
 @app.command("status")
 def anomaly_status(
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
@@ -119,7 +128,7 @@ def anomaly_status(
         return
 
     typer.echo(f"\n  {'SOURCE KEY':<30} {'BUCKETS':>8}  STATUS")
-    typer.echo(f"  {'-'*30} {'-'*8}  {'-'*20}")
+    typer.echo(f"  {'-' * 30} {'-' * 8}  {'-' * 20}")
     for s in sources:
         n = s.get("n_buckets", 0)
         if n >= _MIN_TRAINED:
@@ -133,6 +142,7 @@ def anomaly_status(
 # ---------------------------------------------------------------------------
 # anomaly reset
 # ---------------------------------------------------------------------------
+
 
 @app.command("reset")
 def anomaly_reset(

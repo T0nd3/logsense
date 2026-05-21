@@ -25,8 +25,7 @@ def get_parser(fmt: LogFormat, source: str) -> BaseParser:
 def _evtx_parser(source: str) -> BaseParser:
     try:
         from .evtx import EvtxParser
+
         return EvtxParser(source)
     except ImportError:
-        raise RuntimeError(
-            "python-evtx not installed. Run: pip install log-analyzer[evtx]"
-        )
+        raise RuntimeError("python-evtx not installed. Run: pip install log-analyzer[evtx]")

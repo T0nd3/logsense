@@ -8,20 +8,40 @@ from .base import BaseParser
 
 # Matches: "Jan  5 12:34:56 hostname process[pid]: message"
 _SYSLOG_RE = re.compile(
-    r'(?P<month>\w{3})\s+(?P<day>\d{1,2}) (?P<time>\d{2}:\d{2}:\d{2}) '
-    r'(?P<host>\S+) '
-    r'(?P<process>\S+?)(?:\[(?P<pid>\d+)\])?:\s*'
-    r'(?P<message>.*)'
+    r"(?P<month>\w{3})\s+(?P<day>\d{1,2}) (?P<time>\d{2}:\d{2}:\d{2}) "
+    r"(?P<host>\S+) "
+    r"(?P<process>\S+?)(?:\[(?P<pid>\d+)\])?:\s*"
+    r"(?P<message>.*)"
 )
 
-_AUTH_KEYWORDS = frozenset((
-    "sshd", "sudo", "su", "login", "passwd", "useradd", "userdel",
-    "groupadd", "pam", "auth",
-))
+_AUTH_KEYWORDS = frozenset(
+    (
+        "sshd",
+        "sudo",
+        "su",
+        "login",
+        "passwd",
+        "useradd",
+        "userdel",
+        "groupadd",
+        "pam",
+        "auth",
+    )
+)
 
 _MONTH_MAP = {
-    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
-    "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
+    "Jan": 1,
+    "Feb": 2,
+    "Mar": 3,
+    "Apr": 4,
+    "May": 5,
+    "Jun": 6,
+    "Jul": 7,
+    "Aug": 8,
+    "Sep": 9,
+    "Oct": 10,
+    "Nov": 11,
+    "Dec": 12,
 }
 
 
@@ -78,4 +98,5 @@ class SyslogParser(BaseParser):
 
 class AuthLogParser(SyslogParser):
     """auth.log uses the same syslog format but focuses on auth processes."""
+
     pass

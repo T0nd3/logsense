@@ -6,6 +6,7 @@ Stores per-feature mean and standard deviation computed from historical
   * Z-score (always available, pure Python)
   * Isolation Forest (optional, requires scikit-learn)
 """
+
 from __future__ import annotations
 
 import math

@@ -4,6 +4,7 @@ All tests that would require a live Ollama instance mock out OllamaClient so
 the suite runs offline.  Only the pure-Python units (prompt building,
 keyword extraction, SQLite retrieval) are tested without mocking.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -33,6 +34,7 @@ _T0 = datetime(2024, 3, 15, 10, 0, 0, tzinfo=UTC)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _finding(rule_id: str = "test.rule", sev: FindingSeverity = FindingSeverity.HIGH) -> Finding:
     return Finding(
@@ -93,6 +95,7 @@ def db(tmp_path: Path) -> Path:
 # AbstractLLMClient contract
 # ---------------------------------------------------------------------------
 
+
 class TestAbstractLLMClientContract:
     def test_ollama_is_subclass(self):
         assert issubclass(OllamaClient, AbstractLLMClient)
@@ -123,8 +126,11 @@ class TestAbstractLLMClientContract:
         # OllamaClient.embed needs a running server; the ABC default returns []
         # We test the ABC default via a minimal concrete stub
         class _Stub(AbstractLLMClient):
-            def is_available(self): return True
-            def generate(self, prompt, stream=True): yield "x"
+            def is_available(self):
+                return True
+
+            def generate(self, prompt, stream=True):
+                yield "x"
 
         assert _Stub().embed("test") == []
 
@@ -136,9 +142,14 @@ class TestAbstractLLMClientContract:
         payload = json.dumps({"response": "AB", "done": True}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return payload
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return payload
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = OllamaClient()
@@ -148,6 +159,7 @@ class TestAbstractLLMClientContract:
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 class TestFactory:
     def test_ollama_provider(self):
@@ -218,6 +230,7 @@ class TestFactory:
 # OpenAICompatibleClient
 # ---------------------------------------------------------------------------
 
+
 class TestOpenAICompatibleClient:
     def _client(self, **kw) -> OpenAICompatibleClient:
         return OpenAICompatibleClient(
@@ -240,15 +253,24 @@ class TestOpenAICompatibleClient:
         import urllib.request
 
         lines = [
-            b"data: " + json.dumps({"choices": [{"delta": {"content": "Hello"}}]}).encode() + b"\n",
-            b"data: " + json.dumps({"choices": [{"delta": {"content": " world"}}]}).encode() + b"\n",
+            b"data: "
+            + json.dumps({"choices": [{"delta": {"content": "Hello"}}]}).encode()
+            + b"\n",
+            b"data: "
+            + json.dumps({"choices": [{"delta": {"content": " world"}}]}).encode()
+            + b"\n",
             b"data: [DONE]\n",
         ]
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def __iter__(self): return iter(lines)
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return iter(lines)
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = self._client()
@@ -259,15 +281,20 @@ class TestOpenAICompatibleClient:
         import json
         import urllib.request
 
-        payload = json.dumps({
-            "choices": [{"message": {"content": "Answer here"}}]
-        }).encode()
+        payload = json.dumps({"choices": [{"message": {"content": "Answer here"}}]}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def __iter__(self): return iter([b"data: " + payload + b"\n", b"data: [DONE]\n"])
-            def read(self): return payload
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return iter([b"data: " + payload + b"\n", b"data: [DONE]\n"])
+
+            def read(self):
+                return payload
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = self._client()
@@ -281,9 +308,14 @@ class TestOpenAICompatibleClient:
         payload = json.dumps({"data": [{"embedding": [0.1, 0.2, 0.3]}]}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return payload
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return payload
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = self._client()
@@ -293,9 +325,11 @@ class TestOpenAICompatibleClient:
     def test_embed_returns_empty_on_error(self, monkeypatch):
         import urllib.error
         import urllib.request
+
         monkeypatch.setattr(
-            urllib.request, "urlopen",
-            lambda *a, **kw: (_ for _ in ()).throw(urllib.error.URLError("fail"))
+            urllib.request,
+            "urlopen",
+            lambda *a, **kw: (_ for _ in ()).throw(urllib.error.URLError("fail")),
         )
         c = self._client()
         assert c.embed("hello") == []
@@ -315,9 +349,14 @@ class TestOllamaClientStructure:
         import urllib.request
 
         class FakeResponse:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return b'{"models": []}'
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return b'{"models": []}'
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResponse())
         c = OllamaClient()
@@ -328,8 +367,9 @@ class TestOllamaClientStructure:
         import urllib.request
 
         monkeypatch.setattr(
-            urllib.request, "urlopen",
-            lambda *a, **kw: (_ for _ in ()).throw(urllib.error.URLError("refused"))
+            urllib.request,
+            "urlopen",
+            lambda *a, **kw: (_ for _ in ()).throw(urllib.error.URLError("refused")),
         )
         c = OllamaClient()
         assert c.is_available() is False
@@ -341,9 +381,14 @@ class TestOllamaClientStructure:
         payload = json.dumps({"models": [{"name": "gemma3:4b"}, {"name": "llama3:8b"}]}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return payload
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return payload
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = OllamaClient()
@@ -360,9 +405,14 @@ class TestOllamaClientStructure:
         ]
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def __iter__(self): return iter(lines)
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return iter(lines)
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = OllamaClient()
@@ -389,10 +439,17 @@ class TestOllamaClientStructure:
         payload = json.dumps({"response": "FooBar", "done": True}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return payload
-            def __iter__(self): return iter([payload + b"\n"])
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return payload
+
+            def __iter__(self):
+                return iter([payload + b"\n"])
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = OllamaClient()
@@ -406,9 +463,14 @@ class TestOllamaClientStructure:
         payload = json.dumps({"embeddings": [[0.1, 0.2, 0.3]]}).encode()
 
         class FakeResp:
-            def __enter__(self): return self
-            def __exit__(self, *_): pass
-            def read(self): return payload
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def read(self):
+                return payload
 
         monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **kw: FakeResp())
         c = OllamaClient()
@@ -419,6 +481,7 @@ class TestOllamaClientStructure:
 # ---------------------------------------------------------------------------
 # Prompt builders
 # ---------------------------------------------------------------------------
+
 
 class TestExplainFindingPrompt:
     def test_contains_rule_id(self):
@@ -469,8 +532,16 @@ class TestSummarizePrompt:
         assert "no tracked errors" in p.lower()
 
     def test_contains_error_types(self):
-        rows = [_error_row(), {**_error_row("xyz"), "error_type": "TimeoutError", "count": 5,
-                               "severity": "warning", "normalized_msg": "timeout"}]
+        rows = [
+            _error_row(),
+            {
+                **_error_row("xyz"),
+                "error_type": "TimeoutError",
+                "count": 5,
+                "severity": "warning",
+                "normalized_msg": "timeout",
+            },
+        ]
         p = summarize_prompt(rows, "24h")
         assert "ConnectionError" in p
         assert "TimeoutError" in p
@@ -511,6 +582,7 @@ class TestClassifyEventsPrompt:
 # ---------------------------------------------------------------------------
 # Retrieval — keyword extraction
 # ---------------------------------------------------------------------------
+
 
 class TestKeywords:
     def test_stopwords_filtered(self):

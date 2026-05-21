@@ -20,7 +20,7 @@ def _get_field(event: Event, path: str) -> Any:
     if path == "severity":
         return event.severity.value
     if path.startswith("parsed_fields."):
-        key = path[len("parsed_fields."):]
+        key = path[len("parsed_fields.") :]
         return event.parsed_fields.get(key)
     return None
 
@@ -128,6 +128,7 @@ class RuleEngine:
         # Expire entries outside the time window
         cutoff = ts.replace(tzinfo=UTC) if ts.tzinfo is None else ts
         from datetime import timedelta
+
         cutoff = cutoff - timedelta(seconds=agg.timeframe_seconds)
         while buf and _ts_utc(buf[0]) < cutoff:
             buf.popleft()

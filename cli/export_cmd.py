@@ -1,4 +1,5 @@
 """CLI command group: analyzer export."""
+
 from __future__ import annotations
 
 import subprocess
@@ -16,6 +17,7 @@ def _open_file(path: Path) -> None:
     try:
         if sys.platform == "win32":
             import os
+
             os.startfile(path)  # type: ignore[attr-defined]
         elif sys.platform == "darwin":
             subprocess.run(["open", str(path)], check=False)
@@ -62,7 +64,9 @@ def export_report(
 
     output.write_text(content, encoding="utf-8")
     size_kb = output.stat().st_size / 1024
-    typer.echo(typer.style(f"  Report written: {output}  ({size_kb:.1f} KB)", fg=typer.colors.GREEN))
+    typer.echo(
+        typer.style(f"  Report written: {output}  ({size_kb:.1f} KB)", fg=typer.colors.GREEN)
+    )
 
     if open_file:
         _open_file(output)

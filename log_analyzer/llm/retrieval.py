@@ -8,6 +8,7 @@ Two tiers:
 Both tiers return plain text chunks that the prompt builder assembles into
 the LLM context window.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -20,11 +21,46 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 _STOPWORDS = {
-    "a", "an", "the", "is", "are", "was", "were", "be", "been",
-    "in", "on", "at", "to", "for", "of", "and", "or", "but",
-    "what", "why", "how", "when", "where", "which", "who",
-    "do", "does", "did", "have", "has", "had",
-    "i", "me", "my", "we", "you", "he", "she", "it", "they",
+    "a",
+    "an",
+    "the",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "and",
+    "or",
+    "but",
+    "what",
+    "why",
+    "how",
+    "when",
+    "where",
+    "which",
+    "who",
+    "do",
+    "does",
+    "did",
+    "have",
+    "has",
+    "had",
+    "i",
+    "me",
+    "my",
+    "we",
+    "you",
+    "he",
+    "she",
+    "it",
+    "they",
 }
 
 
@@ -37,6 +73,7 @@ def _keywords(question: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Tier 1 — SQLite keyword search
 # ---------------------------------------------------------------------------
+
 
 def _sqlite_search(db_path: Path, keywords: list[str], limit: int = 6) -> list[str]:
     """Return text chunks matching any of the keywords from the errors table."""
@@ -105,6 +142,7 @@ def _sqlite_search(db_path: Path, keywords: list[str], limit: int = 6) -> list[s
 # ---------------------------------------------------------------------------
 # Tier 2 — ChromaDB vector search (optional)
 # ---------------------------------------------------------------------------
+
 
 def _chroma_available() -> bool:
     return importlib.util.find_spec("chromadb") is not None
@@ -179,12 +217,14 @@ def build_chroma_index(db_path: Path, chroma_path: Path, client) -> int:
         ids.append(row["fingerprint"])
         docs.append(text[:500])
         embeddings.append(vec)
-        metas.append({
-            "kind": "error",
-            "label": f"{row['error_type']} (count={row['count']}, sev={row['severity']})",
-            "severity": row["severity"],
-            "count": row["count"],
-        })
+        metas.append(
+            {
+                "kind": "error",
+                "label": f"{row['error_type']} (count={row['count']}, sev={row['severity']})",
+                "severity": row["severity"],
+                "count": row["count"],
+            }
+        )
 
     if ids:
         col.add(ids=ids, documents=docs, embeddings=embeddings, metadatas=metas)
@@ -195,6 +235,7 @@ def build_chroma_index(db_path: Path, chroma_path: Path, client) -> int:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def retrieve_context(
     question: str,
@@ -213,11 +254,7 @@ def retrieve_context(
     chunks = _sqlite_search(db_path, keywords, limit=limit)
 
     # Vector search (optional enrichment)
-    if (
-        chroma_path is not None
-        and _chroma_available()
-        and ollama_client is not None
-    ):
+    if chroma_path is not None and _chroma_available() and ollama_client is not None:
         try:
             vec = ollama_client.embed(question)
             if vec:

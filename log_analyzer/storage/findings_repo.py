@@ -83,12 +83,8 @@ class FindingsRepository:
     def cleanup_old(self, retention_days: int) -> int:
         """Delete findings older than *retention_days*. Returns deleted count."""
         assert self._conn
-        cutoff = (
-            datetime.now(tz=UTC) - timedelta(days=retention_days)
-        ).isoformat()
-        cur = self._conn.execute(
-            "DELETE FROM findings WHERE created_at < ?", (cutoff,)
-        )
+        cutoff = (datetime.now(tz=UTC) - timedelta(days=retention_days)).isoformat()
+        cur = self._conn.execute("DELETE FROM findings WHERE created_at < ?", (cutoff,))
         self._conn.commit()
         return cur.rowcount
 
@@ -124,9 +120,7 @@ class FindingsRepository:
     def get_by_id(self, finding_id: int) -> sqlite3.Row | None:
         """Return a single finding by primary-key ID, or None if not found."""
         assert self._conn
-        return self._conn.execute(
-            "SELECT * FROM findings WHERE id = ?", (finding_id,)
-        ).fetchone()
+        return self._conn.execute("SELECT * FROM findings WHERE id = ?", (finding_id,)).fetchone()
 
     def get_by_rule(
         self,
@@ -148,9 +142,7 @@ class FindingsRepository:
     ) -> list[sqlite3.Row]:
         """Findings created within the last *since_hours* hours."""
         assert self._conn
-        cutoff = (
-            datetime.now(tz=UTC) - timedelta(hours=since_hours)
-        ).isoformat()
+        cutoff = (datetime.now(tz=UTC) - timedelta(hours=since_hours)).isoformat()
         query = "SELECT * FROM findings WHERE created_at >= ?"
         params: list = [cutoff]
         if severity:

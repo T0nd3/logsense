@@ -9,6 +9,7 @@ Works with any API that speaks the OpenAI chat-completions protocol:
 
 Set api_key to "" or None for local servers that don't need auth.
 """
+
 from __future__ import annotations
 
 import json
@@ -114,9 +115,7 @@ class OpenAICompatibleClient(AbstractLLMClient):
                     data = json.loads(resp.read())
                     yield data["choices"][0]["message"]["content"]
         except urllib.error.URLError as e:
-            raise RuntimeError(
-                f"Cannot reach {self._endpoint}: {e}"
-            ) from e
+            raise RuntimeError(f"Cannot reach {self._endpoint}: {e}") from e
 
     @staticmethod
     def _parse_sse(resp) -> Iterator[str]:
@@ -125,7 +124,7 @@ class OpenAICompatibleClient(AbstractLLMClient):
             line = raw.strip()
             if not line.startswith(_DATA_PREFIX):
                 continue
-            payload = line[len(_DATA_PREFIX):]
+            payload = line[len(_DATA_PREFIX) :]
             if payload == _DONE_SENTINEL:
                 break
             try:

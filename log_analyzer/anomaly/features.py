@@ -3,6 +3,7 @@
 Each TimeBucket covers one time window (default: 60 seconds) and exposes
 a flat dict of numeric features suitable for z-score or Isolation Forest scoring.
 """
+
 from __future__ import annotations
 
 import math
@@ -61,11 +62,7 @@ class TimeBucket:
         for tok in self._path_tokens:
             counts[tok] += 1
         total = len(self._path_tokens)
-        return -sum(
-            (c / total) * math.log2(c / total)
-            for c in counts.values()
-            if c > 0
-        )
+        return -sum((c / total) * math.log2(c / total) for c in counts.values() if c > 0)
 
     def to_feature_dict(self) -> dict[str, float]:
         return {

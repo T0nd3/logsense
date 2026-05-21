@@ -15,15 +15,9 @@ class LogFormat(str, Enum):
     PLAINTEXT = "plaintext"
 
 
-_NGINX_RE = re.compile(
-    r'^\S+ \S+ \S+ \[.+\] "[A-Z]+ .+ HTTP/\d\.\d" \d{3} \d+'
-)
-_SYSLOG_RE = re.compile(
-    r'^\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \S+ \S+(\[\d+\])?:'
-)
-_AUTH_LOG_RE = re.compile(
-    r'^\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \S+ (sshd|sudo|su|login|passwd)\b'
-)
+_NGINX_RE = re.compile(r'^\S+ \S+ \S+ \[.+\] "[A-Z]+ .+ HTTP/\d\.\d" \d{3} \d+')
+_SYSLOG_RE = re.compile(r"^\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \S+ \S+(\[\d+\])?:")
+_AUTH_LOG_RE = re.compile(r"^\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} \S+ (sshd|sudo|su|login|passwd)\b")
 
 
 class FormatDetector:

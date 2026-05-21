@@ -1,4 +1,5 @@
 """Error event detection and stack trace extraction."""
+
 from __future__ import annotations
 
 import re
@@ -10,10 +11,11 @@ _ERROR_SEVERITIES = {Severity.ERROR, Severity.CRITICAL}
 
 # Message patterns that indicate an error even at INFO/WARNING severity
 _ERROR_PATTERNS = [
-    re.compile(r'\b(?:Exception|Traceback|StackTrace|NullPointer)\b', re.IGNORECASE),
-    re.compile(r'\b(?:FATAL|CRITICAL|PANIC|ABORT)\b'),
-    re.compile(r'(?:^|\s)(?:Error|Err):\s', re.IGNORECASE),
+    re.compile(r"\b(?:Exception|Traceback|StackTrace|NullPointer)\b", re.IGNORECASE),
+    re.compile(r"\b(?:FATAL|CRITICAL|PANIC|ABORT)\b"),
+    re.compile(r"(?:^|\s)(?:Error|Err):\s", re.IGNORECASE),
 ]
+
 
 # HTTP 5xx in parsed_fields
 def _is_http_error(event: Event) -> bool:
@@ -40,18 +42,18 @@ def is_error_event(event: Event) -> bool:
 
 # Start markers for each language
 _STACK_STARTS = [
-    re.compile(r'^Traceback \(most recent call last\)', re.MULTILINE),   # Python
-    re.compile(r'^\s+at [\w.$<>]+\([\w.]+:\d+\)', re.MULTILINE),        # Java/Kotlin
-    re.compile(r'^\s+at [\w.<>]+\s+\([\w./:\\]+:\d+:\d+\)', re.MULTILINE),  # JS/TS
-    re.compile(r'^\s+at \w[\w.+`]+ in .+:\d+', re.MULTILINE),           # .NET/C#
+    re.compile(r"^Traceback \(most recent call last\)", re.MULTILINE),  # Python
+    re.compile(r"^\s+at [\w.$<>]+\([\w.]+:\d+\)", re.MULTILINE),  # Java/Kotlin
+    re.compile(r"^\s+at [\w.<>]+\s+\([\w./:\\]+:\d+:\d+\)", re.MULTILINE),  # JS/TS
+    re.compile(r"^\s+at \w[\w.+`]+ in .+:\d+", re.MULTILINE),  # .NET/C#
 ]
 
 # Frame line patterns per language
 _FRAME_PATTERNS = [
-    re.compile(r'^\s+File ".+", line \d+, in .+'),        # Python frame
-    re.compile(r'^\s+at [\w.$<>]+\([\w.]+(?::\d+)?\)'),  # Java frame
-    re.compile(r'^\s+at .+\(.+:\d+:\d+\)'),               # JS/TS frame
-    re.compile(r'^\s+at .+ in .+:\d+'),                   # .NET frame
+    re.compile(r'^\s+File ".+", line \d+, in .+'),  # Python frame
+    re.compile(r"^\s+at [\w.$<>]+\([\w.]+(?::\d+)?\)"),  # Java frame
+    re.compile(r"^\s+at .+\(.+:\d+:\d+\)"),  # JS/TS frame
+    re.compile(r"^\s+at .+ in .+:\d+"),  # .NET frame
 ]
 
 
@@ -71,10 +73,10 @@ def classify_stack_language(stack: str) -> str:
     """Best-effort language classification of a stack trace."""
     if "Traceback (most recent call last)" in stack or 'File "' in stack:
         return "python"
-    if re.search(r'at [\w.$]+\([\w]+\.java:\d+\)', stack):
+    if re.search(r"at [\w.$]+\([\w]+\.java:\d+\)", stack):
         return "java"
-    if re.search(r'at .+\(.+\.(?:js|ts|mjs):\d+', stack):
+    if re.search(r"at .+\(.+\.(?:js|ts|mjs):\d+", stack):
         return "javascript"
-    if re.search(r'at .+ in .+\.cs:\d+', stack):
+    if re.search(r"at .+ in .+\.cs:\d+", stack):
         return "dotnet"
     return "unknown"

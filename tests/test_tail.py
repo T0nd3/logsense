@@ -1,4 +1,5 @@
 """Tests for TailAdapter and tail_helpers."""
+
 from __future__ import annotations
 
 import asyncio
@@ -15,6 +16,7 @@ from log_analyzer.tail_helpers import meets_alert_severity, post_webhook
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _collect(adapter: TailAdapter, n: int, timeout: float = 3.0) -> list:
     """Collect up to *n* events from an adapter, stopping after *timeout* s."""
@@ -52,6 +54,7 @@ def _write(path: Path, text: str, append: bool = False) -> None:
 # ---------------------------------------------------------------------------
 # TailAdapter — from_start
 # ---------------------------------------------------------------------------
+
 
 class TestTailAdapterFromStart:
     def test_reads_existing_lines(self, tmp_path: Path):
@@ -100,6 +103,7 @@ class TestTailAdapterFromStart:
 # ---------------------------------------------------------------------------
 # TailAdapter — tail mode (seek to end, pick up new lines)
 # ---------------------------------------------------------------------------
+
 
 class TestTailAdapterTailMode:
     def test_picks_up_new_lines_after_start(self, tmp_path: Path):
@@ -150,6 +154,7 @@ class TestTailAdapterTailMode:
 # TailAdapter — file rotation / truncation
 # ---------------------------------------------------------------------------
 
+
 class TestTailAdapterRotation:
     def test_detects_truncation(self, tmp_path: Path):
         """Adapter should continue after the file is truncated to 0."""
@@ -163,7 +168,7 @@ class TestTailAdapterRotation:
 
             async def _truncate_then_write():
                 await asyncio.sleep(0.1)
-                _write(log, "")          # truncate
+                _write(log, "")  # truncate
                 await asyncio.sleep(0.1)
                 _write(log, "after rotation\n")  # new content
 
@@ -216,6 +221,7 @@ class TestTailAdapterRotation:
 # TailAdapter — format detection
 # ---------------------------------------------------------------------------
 
+
 class TestTailAdapterFormatDetection:
     def test_detect_on_empty_file_does_not_raise(self, tmp_path: Path):
         log = tmp_path / "empty.log"
@@ -232,6 +238,7 @@ class TestTailAdapterFormatDetection:
 
     def test_detects_json(self, tmp_path: Path):
         from log_analyzer.parsers.detector import LogFormat
+
         log = tmp_path / "app.log"
         _write(log, json.dumps({"level": "INFO", "msg": "hi"}) + "\n")
         adapter = TailAdapter(log, from_start=True)
@@ -241,6 +248,7 @@ class TestTailAdapterFormatDetection:
 # ---------------------------------------------------------------------------
 # meets_alert_severity
 # ---------------------------------------------------------------------------
+
 
 class TestMeetsAlertSeverity:
     def test_critical_meets_high(self):
@@ -266,6 +274,7 @@ class TestMeetsAlertSeverity:
 # ---------------------------------------------------------------------------
 # post_webhook — non-fatal failure
 # ---------------------------------------------------------------------------
+
 
 class TestPostWebhook:
     def test_unreachable_url_does_not_raise(self):

@@ -1,4 +1,5 @@
 """JSON and HTMX partial routes used by the dashboard."""
+
 from __future__ import annotations
 
 import gzip
@@ -22,6 +23,7 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # HTMX partials
 # ---------------------------------------------------------------------------
+
 
 @router.get("/findings", response_class=HTMLResponse)
 def api_findings(
@@ -63,6 +65,7 @@ def api_errors(
 # JSON data endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/stats")
 def api_stats(
     f_repo: FindingsRepository = Depends(findings_repo),
@@ -94,23 +97,26 @@ def api_trend(
 # LLM explain
 # ---------------------------------------------------------------------------
 
+
 def _explain_prompt(rule_id: str, severity: str, message: str, source: str) -> str:
-    return "\n".join([
-        "You are a log analysis expert. Explain the following security finding concisely.",
-        "",
-        "FINDING:",
-        f"  Rule     : {rule_id}",
-        f"  Severity : {severity.upper()}",
-        f"  Source   : {source}",
-        f"  Message  : {message}",
-        "",
-        "Answer these three questions in 3-5 sentences total:",
-        "1. What happened?",
-        "2. What is the likely cause?",
-        "3. What should be done next?",
-        "",
-        "Be specific and actionable.",
-    ])
+    return "\n".join(
+        [
+            "You are a log analysis expert. Explain the following security finding concisely.",
+            "",
+            "FINDING:",
+            f"  Rule     : {rule_id}",
+            f"  Severity : {severity.upper()}",
+            f"  Source   : {source}",
+            f"  Message  : {message}",
+            "",
+            "Answer these three questions in 3-5 sentences total:",
+            "1. What happened?",
+            "2. What is the likely cause?",
+            "3. What should be done next?",
+            "",
+            "Be specific and actionable.",
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +151,7 @@ async def api_upload(
         return templates.TemplateResponse(
             request,
             "partials/upload_results.html",
-            {"error": f"File too large — maximum upload size is 10 MB.", "filename": filename},
+            {"error": "File too large — maximum upload size is 10 MB.", "filename": filename},
         )
     if not content.strip():
         return templates.TemplateResponse(
@@ -195,21 +201,27 @@ async def api_upload(
             event.message = result.text
             pii_hits += len(result.hits)
 
-            events_out.append({
-                "timestamp": event.timestamp.strftime("%Y-%m-%d %H:%M:%S") if event.timestamp else "—",
-                "severity": event.severity.value,
-                "message": event.message[:200],
-            })
+            events_out.append(
+                {
+                    "timestamp": event.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                    if event.timestamp
+                    else "—",
+                    "severity": event.severity.value,
+                    "message": event.message[:200],
+                }
+            )
 
             if rule_engine:
                 for f in rule_engine.process(event):
-                    findings_out.append({
-                        "rule_id": f.rule_id,
-                        "severity": f.severity.value,
-                        "message": f.message,
-                        "source": f.source,
-                        "timestamp": f.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                    })
+                    findings_out.append(
+                        {
+                            "rule_id": f.rule_id,
+                            "severity": f.severity.value,
+                            "message": f.message,
+                            "source": f.source,
+                            "timestamp": f.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                        }
+                    )
 
         # Sort findings: critical → high → medium → low
         findings_out.sort(key=lambda f: _SEV_ORDER.get(f["severity"], 9))

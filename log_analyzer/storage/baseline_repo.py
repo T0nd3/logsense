@@ -134,10 +134,6 @@ class BaselineRepository:
 
     def delete_source(self, source_key: str) -> None:
         assert self._conn
-        self._conn.execute(
-            "DELETE FROM baseline_stats WHERE source_key = ?", (source_key,)
-        )
-        self._conn.execute(
-            "DELETE FROM baseline_observations WHERE source_key = ?", (source_key,)
-        )
+        self._conn.execute("DELETE FROM baseline_stats WHERE source_key = ?", (source_key,))
+        self._conn.execute("DELETE FROM baseline_observations WHERE source_key = ?", (source_key,))
         self._conn.commit()

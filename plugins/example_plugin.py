@@ -12,17 +12,19 @@ def register(registry) -> None:
 
     # ── Custom detection rule ──────────────────────────────────────────
     # Same schema as built-in YAML rules.
-    registry.add_rule({
-        "id": "CUSTOM_EXAMPLE",
-        "title": "Example: custom trigger word",
-        "description": "Fires when the message contains 'EXAMPLE_TRIGGER'. Replace with your pattern.",
-        "level": "medium",
-        "detection": {
-            "match": [
-                {"field": "message", "op": "contains", "value": "EXAMPLE_TRIGGER"},
-            ]
-        },
-    })
+    registry.add_rule(
+        {
+            "id": "CUSTOM_EXAMPLE",
+            "title": "Example: custom trigger word",
+            "description": "Fires when the message contains 'EXAMPLE_TRIGGER'. Replace with your pattern.",
+            "level": "medium",
+            "detection": {
+                "match": [
+                    {"field": "message", "op": "contains", "value": "EXAMPLE_TRIGGER"},
+                ]
+            },
+        }
+    )
 
     # ── Custom PII pattern ─────────────────────────────────────────────
     # Redacts strings matching the regex; replacement: <employee_XYZ123>

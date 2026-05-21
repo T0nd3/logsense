@@ -23,15 +23,17 @@ _SEVERITY_MAP = {
 def _require_opensearch():
     try:
         import opensearchpy
+
         return opensearchpy
     except ImportError:
         raise ImportError(
-            "opensearch-py is not installed. "
-            "Run: pip install log-analyzer[opensearch]"
+            "opensearch-py is not installed. Run: pip install log-analyzer[opensearch]"
         )
 
 
-def _make_client(host: str, port: int, use_ssl: bool, verify_certs: bool, auth: OpenSearchAuth | None):
+def _make_client(
+    host: str, port: int, use_ssl: bool, verify_certs: bool, auth: OpenSearchAuth | None
+):
     os_mod = _require_opensearch()
     OpenSearch = os_mod.OpenSearch
 

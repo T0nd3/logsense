@@ -13,5 +13,4 @@ class SourceAdapter(ABC):
     """
 
     @abstractmethod
-    def events(self) -> AsyncIterator[Event]:
-        ...
+    def events(self) -> AsyncIterator[Event]: ...
