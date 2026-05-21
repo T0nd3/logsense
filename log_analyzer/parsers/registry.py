@@ -28,4 +28,4 @@ def _evtx_parser(source: str) -> BaseParser:
 
         return EvtxParser(source)
     except ImportError:
-        raise RuntimeError("python-evtx not installed. Run: pip install log-analyzer[evtx]")
+        raise RuntimeError("python-evtx not installed. Run: pip install logsense[evtx]")

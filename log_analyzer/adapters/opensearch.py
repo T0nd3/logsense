@@ -27,7 +27,7 @@ def _require_opensearch():
         return opensearchpy
     except ImportError:
         raise ImportError(
-            "opensearch-py is not installed. Run: pip install log-analyzer[opensearch]"
+            "opensearch-py is not installed. Run: pip install logsense[opensearch]"
         )
 
 
@@ -140,7 +140,7 @@ class OpenSearchAdapter(SourceAdapter):
     """Reads log events from an OpenSearch index via search_after pagination.
 
     Read-only — uses API keys or credentials without write permissions.
-    Install the optional dependency first: pip install log-analyzer[opensearch]
+    Install the optional dependency first: pip install logsense[opensearch]
     """
 
     def __init__(

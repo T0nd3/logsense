@@ -21,7 +21,7 @@ def serve(
 
     Install web dependencies first:
 
-        pip install 'log-analyzer[web]'
+        pip install 'logsense[web]'
     """
     try:
         import uvicorn
@@ -29,7 +29,7 @@ def serve(
         typer.echo(
             "Error: uvicorn is not installed.\n"
             "Install web dependencies with:\n\n"
-            "  pip install 'log-analyzer[web]'\n",
+            "  pip install 'logsense[web]'\n",
             err=True,
         )
         raise typer.Exit(1)

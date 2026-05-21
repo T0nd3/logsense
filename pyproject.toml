@@ -3,15 +3,40 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "log-analyzer"
+name = "logsense"
 version = "0.1.0"
-description = "Local log analysis tool with LLM support"
+description = "Local log analysis with PII redaction, threat detection, anomaly detection and LLM-powered insights"
+readme = "README.md"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Benjamin Fäuster", email = "benjamin.faeuster@web.de" },
+]
+keywords = ["logs", "log-analysis", "security", "observability", "siem", "anomaly-detection", "pii"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+]
 dependencies = [
     "typer>=0.12",
     "pyyaml>=6.0",
     "aiofiles>=23.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/T0nd3/logsense"
+Repository = "https://github.com/T0nd3/logsense"
+Issues = "https://github.com/T0nd3/logsense/issues"
 
 [project.optional-dependencies]
 evtx = ["python-evtx>=0.7"]

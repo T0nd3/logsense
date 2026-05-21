@@ -1,6 +1,6 @@
 """Claude (Anthropic) LLM client.
 
-Requires: pip install log-analyzer[claude]  (installs anthropic SDK)
+Requires: pip install logsense[claude]  (installs anthropic SDK)
 API key:  set ANTHROPIC_API_KEY env var  or  llm.api_key in config.yaml
 """
 
@@ -71,7 +71,7 @@ class ClaudeClient(AbstractLLMClient):
     def generate(self, prompt: str, stream: bool = True) -> Iterator[str]:
         if not _SDK_AVAILABLE:
             raise RuntimeError(
-                "anthropic SDK not installed. Run: pip install log-analyzer[claude]"
+                "anthropic SDK not installed. Run: pip install logsense[claude]"
             )
         if not self._api_key:
             raise RuntimeError(

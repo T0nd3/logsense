@@ -488,7 +488,7 @@ def version() -> None:
     """Print version."""
     from log_analyzer import __version__
 
-    typer.echo(f"log-analyzer {__version__}")
+    typer.echo(f"logsense {__version__}")
 
 
 if __name__ == "__main__":
