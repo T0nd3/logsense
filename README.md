@@ -62,14 +62,14 @@
 pip install .
 
 # Scan a log file
-analyzer scan /var/log/syslog
+logsense scan /var/log/syslog
 
 # Watch a file in real time
-analyzer tail /var/log/nginx/access.log
+logsense tail /var/log/nginx/access.log
 
 # Start the web dashboard
 pip install '.[web]'
-analyzer serve
+logsense serve
 ```
 
 That's it. Open `http://localhost:8080` in your browser.
@@ -107,7 +107,7 @@ pip install '.[web,opensearch,evtx,claude,embed]'
 ### Shell auto-completion
 
 ```bash
-analyzer --install-completion    # bash / zsh / fish / PowerShell
+logsense --install-completion    # bash / zsh / fish / PowerShell
 ```
 
 ---
@@ -123,7 +123,7 @@ All commands accept `--config/-c <path>` to specify a config file. Defaults to `
 Parse a log file (or stdin), redact PII, run detection rules, and optionally persist errors and findings.
 
 ```bash
-analyzer scan [OPTIONS] [PATH]
+logsense scan [OPTIONS] [PATH]
 ```
 
 | Option | Default | Description |
@@ -147,20 +147,20 @@ analyzer scan [OPTIONS] [PATH]
 
 ```bash
 # Basic scan with PII masking
-analyzer scan /var/log/auth.log --redact mask
+logsense scan /var/log/auth.log --redact mask
 
 # Scan a gzip-compressed file and persist results
-analyzer scan /var/log/nginx/access.log.gz --track-errors
+logsense scan /var/log/nginx/access.log.gz --track-errors
 
 # Read from stdin (e.g. pipe from journalctl)
-journalctl -n 1000 | analyzer scan -
+journalctl -n 1000 | logsense scan -
 
 # Scan with anomaly detection after training the baseline
-analyzer anomaly learn /var/log/syslog --source syslog
-analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+logsense anomaly learn /var/log/syslog --source syslog
+logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog
 
 # Explain the worst findings with Ollama
-analyzer scan /var/log/auth.log --track-errors --explain-findings
+logsense scan /var/log/auth.log --track-errors --explain-findings
 ```
 
 ---
@@ -170,7 +170,7 @@ analyzer scan /var/log/auth.log --track-errors --explain-findings
 Watch a log file for new lines in real time. Applies PII redaction and detection rules to every incoming event. Press **Ctrl+C** to stop.
 
 ```bash
-analyzer tail [OPTIONS] PATH
+logsense tail [OPTIONS] PATH
 ```
 
 | Option | Default | Description |
@@ -192,13 +192,13 @@ Dismissed rules (see [`findings dismiss`](#findings)) are filtered out in real t
 
 ```bash
 # Watch nginx access log and send critical findings to a webhook
-analyzer tail /var/log/nginx/access.log \
+logsense tail /var/log/nginx/access.log \
   --track-findings \
   --alert-webhook https://hooks.example.com/security \
   --alert-min-severity high
 
 # Read from the beginning and don't bother persisting
-analyzer tail /var/log/auth.log --from-start --no-rules
+logsense tail /var/log/auth.log --from-start --no-rules
 ```
 
 ---
@@ -208,7 +208,7 @@ analyzer tail /var/log/auth.log --from-start --no-rules
 Start the LogSense web dashboard (requires `pip install '.[web]'`).
 
 ```bash
-analyzer serve [OPTIONS]
+logsense serve [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -219,7 +219,7 @@ analyzer serve [OPTIONS]
 | `--reload` | off | Auto-reload on source file changes (development mode). |
 
 ```bash
-analyzer serve --port 9090
+logsense serve --port 9090
 ```
 
 Open `http://localhost:8080` to access the dashboard, or `http://localhost:8080/api/docs` for the interactive REST API documentation.
@@ -231,13 +231,13 @@ Open `http://localhost:8080` to access the dashboard, or `http://localhost:8080/
 Browse and manage HIGH/CRITICAL findings persisted by `scan --track-errors` or `tail --track-findings`.
 
 ```bash
-analyzer findings [list|show|summary|dismiss|undismiss|dismissed]
+logsense findings [list|show|summary|dismiss|undismiss|dismissed]
 ```
 
 #### `findings list`
 
 ```bash
-analyzer findings list [--severity high] [--source nginx.log] [--since 7d] [-n 100]
+logsense findings list [--severity high] [--source nginx.log] [--since 7d] [-n 100]
 ```
 
 `--since` accepts `s`, `m`, `h`, `d` suffixes: `30m`, `24h`, `7d`, `30d`.
@@ -247,8 +247,8 @@ analyzer findings list [--severity high] [--source nginx.log] [--since 7d] [-n 1
 Show all stored occurrences for a specific rule:
 
 ```bash
-analyzer findings show SSH_BRUTE_FORCE
-analyzer findings show SSH_BRUTE_FORCE -n 50
+logsense findings show SSH_BRUTE_FORCE
+logsense findings show SSH_BRUTE_FORCE -n 50
 ```
 
 #### `findings summary`
@@ -256,7 +256,7 @@ analyzer findings show SSH_BRUTE_FORCE -n 50
 Print counts by severity and the top 10 rules:
 
 ```bash
-analyzer findings summary
+logsense findings summary
 ```
 
 #### `findings dismiss <RULE_ID>`
@@ -265,10 +265,10 @@ Suppress a rule so future scans and tail sessions skip it:
 
 ```bash
 # Global false-positive — suppress everywhere
-analyzer findings dismiss SSH_BRUTE_FORCE --reason "internal bastion host"
+logsense findings dismiss SSH_BRUTE_FORCE --reason "internal bastion host"
 
 # Suppress only for one source file
-analyzer findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
+logsense findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
 ```
 
 #### `findings undismiss <RULE_ID>`
@@ -276,7 +276,7 @@ analyzer findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal s
 Re-enable a suppressed rule:
 
 ```bash
-analyzer findings undismiss SSH_BRUTE_FORCE
+logsense findings undismiss SSH_BRUTE_FORCE
 ```
 
 #### `findings dismissed`
@@ -284,7 +284,7 @@ analyzer findings undismiss SSH_BRUTE_FORCE
 List all currently active suppressions:
 
 ```bash
-analyzer findings dismissed
+logsense findings dismissed
 ```
 
 ---
@@ -294,13 +294,13 @@ analyzer findings dismissed
 Browse deduplicated error groups tracked by `scan --track-errors`.
 
 ```bash
-analyzer errors [list|show|new|regression]
+logsense errors [list|show|new|regression]
 ```
 
 #### `errors list`
 
 ```bash
-analyzer errors list [--sort last_seen|count|first_seen] [--severity error] [-n 50]
+logsense errors list [--sort last_seen|count|first_seen] [--severity error] [-n 50]
 ```
 
 #### `errors show <FINGERPRINT>`
@@ -308,7 +308,7 @@ analyzer errors list [--sort last_seen|count|first_seen] [--severity error] [-n 
 Show details and the 20 most recent occurrences for an error fingerprint:
 
 ```bash
-analyzer errors show abc123def456
+logsense errors show abc123def456
 ```
 
 #### `errors new`
@@ -316,7 +316,7 @@ analyzer errors show abc123def456
 Show errors first seen within a time window — useful for catching regressions after a deploy:
 
 ```bash
-analyzer errors new --since 1h
+logsense errors new --since 1h
 ```
 
 #### `errors regression`
@@ -324,7 +324,7 @@ analyzer errors new --since 1h
 Show errors that reappeared after a silence period:
 
 ```bash
-analyzer errors regression --silence 24h
+logsense errors regression --silence 24h
 ```
 
 ---
@@ -334,10 +334,10 @@ analyzer errors regression --silence 24h
 Manage and validate detection rules.
 
 ```bash
-analyzer rules list [--rules-dir ./my-rules]
+logsense rules list [--rules-dir ./my-rules]
 
-analyzer rules validate my_rule.yml
-analyzer rules validate sigma_rule.yml --sigma
+logsense rules validate my_rule.yml
+logsense rules validate sigma_rule.yml --sigma
 ```
 
 ---
@@ -347,7 +347,7 @@ analyzer rules validate sigma_rule.yml --sigma
 Train and manage the statistical anomaly detection baseline.
 
 ```bash
-analyzer anomaly [learn|status|reset]
+logsense anomaly [learn|status|reset]
 ```
 
 #### `anomaly learn`
@@ -355,8 +355,8 @@ analyzer anomaly [learn|status|reset]
 Feed a log file into the baseline. Run this several times on representative logs. At least **5 time buckets** are needed before the baseline is considered trained.
 
 ```bash
-analyzer anomaly learn /var/log/syslog --source syslog
-analyzer anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
+logsense anomaly learn /var/log/syslog --source syslog
+logsense anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
 ```
 
 #### `anomaly status`
@@ -364,7 +364,7 @@ analyzer anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
 Show baseline training state for all known source keys:
 
 ```bash
-analyzer anomaly status
+logsense anomaly status
 ```
 
 #### `anomaly reset`
@@ -372,14 +372,14 @@ analyzer anomaly status
 Delete baseline data for one source key or all sources:
 
 ```bash
-analyzer anomaly reset --source syslog
-analyzer anomaly reset --all
+logsense anomaly reset --source syslog
+logsense anomaly reset --all
 ```
 
 Once the baseline is trained, enable detection during scan:
 
 ```bash
-analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anomaly-threshold 2.5
+logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anomaly-threshold 2.5
 ```
 
 ---
@@ -389,7 +389,7 @@ analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anoma
 LLM-powered log analysis. Supports **Ollama** (default, local), **Claude** (Anthropic), and any **OpenAI-compatible** API.
 
 ```bash
-analyzer llm [info|explain|summarize|ask|index]
+logsense llm [info|explain|summarize|ask|index]
 ```
 
 #### `llm info`
@@ -397,7 +397,7 @@ analyzer llm [info|explain|summarize|ask|index]
 Check provider connectivity and list available models:
 
 ```bash
-analyzer llm info
+logsense llm info
 ```
 
 #### `llm explain <FINGERPRINT>`
@@ -405,7 +405,7 @@ analyzer llm info
 Explain a tracked error in plain language:
 
 ```bash
-analyzer llm explain abc123def456
+logsense llm explain abc123def456
 ```
 
 #### `llm summarize`
@@ -413,7 +413,7 @@ analyzer llm explain abc123def456
 Generate a natural-language summary of recent errors:
 
 ```bash
-analyzer llm summarize --since 24h
+logsense llm summarize --since 24h
 ```
 
 #### `llm ask <QUESTION>`
@@ -422,11 +422,11 @@ Ask questions about your findings and errors using RAG over the local SQLite dat
 
 ```bash
 # Build the vector index first (requires pip install '.[embed]')
-analyzer llm index
+logsense llm index
 
 # Then ask freely
-analyzer llm ask "What are the most critical security issues from the past week?"
-analyzer llm ask "Which source files had the most brute-force attempts?"
+logsense llm ask "What are the most critical security issues from the past week?"
+logsense llm ask "Which source files had the most brute-force attempts?"
 ```
 
 > **Privacy note:** LLM queries use *redacted* log data. When using a cloud provider (Claude, OpenAI), a warning is shown before any data is sent.
@@ -438,18 +438,18 @@ analyzer llm ask "Which source files had the most brute-force attempts?"
 Query and analyse logs from an OpenSearch or Elasticsearch cluster.
 
 ```bash
-analyzer opensearch scan [OPTIONS]
-analyzer opensearch info
+logsense opensearch scan [OPTIONS]
+logsense opensearch info
 ```
 
 Configure the connection in `config.yaml` under the `opensearch:` key (see [Configuration](#configuration)). Credentials can be set via environment variables to avoid storing them in the config file.
 
 ```bash
 # Check cluster connectivity
-analyzer opensearch info
+logsense opensearch info
 
 # Run detection rules on the last 2 hours of logs
-analyzer opensearch scan --index "logstash-*" --since 2h --track-errors
+logsense opensearch scan --index "logstash-*" --since 2h --track-errors
 ```
 
 ---
@@ -459,7 +459,7 @@ analyzer opensearch scan --index "logstash-*" --since 2h --track-errors
 Generate reports from the SQLite database.
 
 ```bash
-analyzer export report [OPTIONS]
+logsense export report [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -472,10 +472,10 @@ analyzer export report [OPTIONS]
 
 ```bash
 # Weekly security report
-analyzer export report --since 7d --output weekly.md --open
+logsense export report --since 7d --output weekly.md --open
 
 # Critical-only daily report
-analyzer export report --since 24h --severity critical --title "Daily Critical Alerts"
+logsense export report --since 24h --severity critical --title "Daily Critical Alerts"
 ```
 
 ---
@@ -485,7 +485,7 @@ analyzer export report --since 24h --severity critical --title "Daily Critical A
 Interactive demo and database seeding using synthetic data — no real log files, Ollama, or database required for `demo run`.
 
 ```bash
-analyzer demo [run|seed|clear]
+logsense demo [run|seed|clear]
 ```
 
 #### `demo run`
@@ -493,8 +493,8 @@ analyzer demo [run|seed|clear]
 Guided CLI walkthrough of all 7 feature sections (log parsing, PII, rules, error tracking, findings, anomaly detection, LLM):
 
 ```bash
-analyzer demo run           # pause after each section
-analyzer demo run --no-pause  # print everything at once
+logsense demo run           # pause after each section
+logsense demo run --no-pause  # print everything at once
 ```
 
 #### `demo seed`
@@ -502,7 +502,7 @@ analyzer demo run --no-pause  # print everything at once
 Populate the SQLite database with synthetic findings and errors so the **web dashboard** has something to display immediately. Inserts 25 findings spread over 14 days (for the trend chart) and 5 error groups. All records are tagged internally and never mixed with real data.
 
 ```bash
-analyzer demo seed
+logsense demo seed
 ```
 
 #### `demo clear`
@@ -510,7 +510,7 @@ analyzer demo seed
 Remove every record written by `demo seed`. Real findings and errors are never touched.
 
 ```bash
-analyzer demo clear
+logsense demo clear
 ```
 
 ---
@@ -577,7 +577,7 @@ opensearch:
 | `OPENSEARCH_CLIENT_CERT` | Path to client certificate |
 | `OPENSEARCH_CLIENT_KEY` | Path to client private key |
 | `OPENSEARCH_CA_CERTS` | Path to CA certificate bundle |
-| `LOGSENSE_CONFIG` | Config file path used by `analyzer serve --reload` |
+| `LOGSENSE_CONFIG` | Config file path used by `logsense serve --reload` |
 
 ---
 
@@ -651,7 +651,7 @@ detection:
 Validate a rule before using it:
 
 ```bash
-analyzer rules validate my_rule.yml
+logsense rules validate my_rule.yml
 ```
 
 ### Sigma rules
@@ -659,7 +659,7 @@ analyzer rules validate my_rule.yml
 Import a Sigma rule and convert it to the native format:
 
 ```bash
-analyzer rules validate sigma_rule.yml --sigma
+logsense rules validate sigma_rule.yml --sigma
 ```
 
 ---
@@ -703,7 +703,7 @@ def register(registry) -> None:
     registry.add_rule_dir(Path(__file__).parent / "my_rules")
 ```
 
-Plugin rules participate in both `analyzer scan`, `analyzer tail`, and the web dashboard rule engine. Plugin PII patterns apply to every redaction pass. A plugin that raises an exception is logged as a warning and skipped — it never crashes the host process.
+Plugin rules participate in both `logsense scan`, `logsense tail`, and the web dashboard rule engine. Plugin PII patterns apply to every redaction pass. A plugin that raises an exception is logged as a warning and skipped — it never crashes the host process.
 
 ---
 
@@ -715,14 +715,14 @@ LogSense uses a statistical Z-score baseline to detect unusual log activity with
 
 ```bash
 # Step 1: Feed representative logs (repeat for several days of data)
-analyzer anomaly learn /var/log/syslog --source syslog
+logsense anomaly learn /var/log/syslog --source syslog
 
 # Step 2: Check training state
-analyzer anomaly status
+logsense anomaly status
 # shows: syslog → 42 observations  trained ✓
 
 # Step 3: Enable detection in scan or tail
-analyzer scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog
 ```
 
 At least **5 time buckets** are required before the baseline is used. The baseline grows automatically every time you scan with `--detect-anomalies` — no separate training step is needed once you're in production.
@@ -731,10 +731,10 @@ Adjust sensitivity with `--anomaly-threshold` (default: `3.0` standard deviation
 
 ```bash
 # More sensitive
-analyzer scan /var/log/syslog --detect-anomalies --anomaly-threshold 2.0
+logsense scan /var/log/syslog --detect-anomalies --anomaly-threshold 2.0
 
 # Less sensitive
-analyzer scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
+logsense scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
 ```
 
 ---
@@ -748,7 +748,7 @@ analyzer scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
 ollama pull gemma3:4b
 
 # Default config already points to http://localhost:11434
-analyzer llm info
+logsense llm info
 ```
 
 ### Claude (Anthropic)
@@ -762,7 +762,7 @@ llm:
 
 ```bash
 export LLM_API_KEY=sk-ant-...
-analyzer llm info
+logsense llm info
 ```
 
 ### OpenAI-compatible APIs
@@ -787,7 +787,7 @@ export LLM_API_KEY=sk-...
 Start the server (requires `pip install '.[web]'`):
 
 ```bash
-analyzer serve --port 8080
+logsense serve --port 8080
 ```
 
 ### Dashboard pages
@@ -806,7 +806,7 @@ Navigate to `/upload` in the browser to scan any log file without leaving the da
 - **Drag-and-drop** or click to browse — `.log`, `.txt`, `.gz`, `.json`
 - Choose PII mode: **Redact** (pseudonymize), **Mask** (`<TYPE>`), or **Dry-run**
 - Results appear inline (no page reload): stat cards, findings table sorted by severity, 20-event sample
-- **Nothing is persisted** — purely transient analysis; use `analyzer scan --track-errors` to save results
+- **Nothing is persisted** — purely transient analysis; use `logsense scan --track-errors` to save results
 - Maximum upload size: **10 MB**
 
 ### REST API v1
@@ -887,7 +887,7 @@ docker run --rm \
   -v /var/log:/logs:ro \
   -v logsense-data:/data \
   logsense \
-  analyzer scan /logs/syslog --track-errors
+  logsense scan /logs/syslog --track-errors
 ```
 
 ### Demo data for the web dashboard
@@ -896,10 +896,10 @@ Seed the database with synthetic findings and errors so the dashboard shows data
 
 ```bash
 # Populate (25 findings over 14 days + 5 error groups)
-docker compose exec logsense analyzer demo seed
+docker compose exec logsense logsense demo seed
 
 # Remove all demo data (real data is untouched)
-docker compose exec logsense analyzer demo clear
+docker compose exec logsense logsense demo clear
 ```
 
 Alternatively, upload a real log file via the browser at `http://localhost:8080/upload` for an instant, transient scan.

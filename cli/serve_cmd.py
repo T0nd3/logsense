@@ -1,4 +1,4 @@
-"""CLI command: analyzer serve — starts the LogSense web dashboard."""
+"""CLI command: logsense serve — starts the LogSense web dashboard."""
 
 from __future__ import annotations
 

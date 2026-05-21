@@ -24,7 +24,7 @@ runner = CliRunner()
 def _cfg_file(tmp_path: Path, db_name: str = "test.db") -> tuple[Path, list[str]]:
     """Return (db_path, --config args) for a temp config."""
     db_path = tmp_path / db_name
-    cfg = tmp_path / "analyzer.yaml"
+    cfg = tmp_path / "logsense.yaml"
     cfg.write_text(f"db_path: {db_path}\n")
     return db_path, ["--config", str(cfg)]
 

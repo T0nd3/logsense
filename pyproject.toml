@@ -57,7 +57,7 @@ dev = [
 ]
 
 [project.scripts]
-analyzer = "cli.main:app"
+logsense = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["logsense", "cli"]

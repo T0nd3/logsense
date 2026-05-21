@@ -24,7 +24,7 @@ def _ts(offset_hours: int = 0) -> datetime:
 
 
 def _cfg_args(db_path: Path) -> list[str]:
-    cfg_file = db_path.parent / "analyzer.yaml"
+    cfg_file = db_path.parent / "logsense.yaml"
     cfg_file.write_text(f"db_path: {db_path}\n")
     return ["--config", str(cfg_file)]
 

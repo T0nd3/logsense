@@ -104,7 +104,7 @@ def summarize_prompt(
     if not error_rows:
         return (
             "There are no tracked errors in the database. "
-            "Run 'analyzer scan --track-errors' first."
+            "Run 'logsense scan --track-errors' first."
         )
 
     lines = [

@@ -53,7 +53,7 @@ def errors_list(
         summary = repo.summary()
 
     if not rows:
-        typer.echo("No errors tracked yet. Run 'analyzer scan' first.")
+        typer.echo("No errors tracked yet. Run 'logsense scan' first.")
         return
 
     typer.echo(

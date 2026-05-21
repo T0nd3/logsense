@@ -47,4 +47,4 @@ EXPOSE 8080
 # Used by --reload / uvicorn factory mode
 ENV LOGSENSE_CONFIG=/app/config.yaml
 
-CMD ["analyzer", "serve", "--host", "0.0.0.0", "--port", "8080", "--config", "/app/config.yaml"]
+CMD ["logsense", "serve", "--host", "0.0.0.0", "--port", "8080", "--config", "/app/config.yaml"]

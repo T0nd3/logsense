@@ -3,7 +3,7 @@
 Two tiers:
   1. SQLite keyword search — always available, zero extra deps.
   2. ChromaDB vector search — optional, activated when ``chromadb`` is
-     installed and an index has been built via ``analyzer llm index``.
+     installed and an index has been built via ``logsense llm index``.
 
 Both tiers return plain text chunks that the prompt builder assembles into
 the LLM context window.

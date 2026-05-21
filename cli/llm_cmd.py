@@ -104,7 +104,7 @@ def llm_info(
 @app.command("explain")
 def llm_explain(
     fingerprint: Annotated[
-        str, typer.Argument(help="Error fingerprint from 'analyzer errors list'.")
+        str, typer.Argument(help="Error fingerprint from 'logsense errors list'.")
     ],
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
@@ -168,7 +168,7 @@ def llm_summarize(
         rows = rows[:limit]
 
     if not rows:
-        typer.echo("No errors found. Run 'analyzer scan --track-errors' first.")
+        typer.echo("No errors found. Run 'logsense scan --track-errors' first.")
         return
 
     row_dicts = [dict(r) for r in rows]
@@ -236,7 +236,7 @@ def llm_ask(
 def llm_index(
     config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
 ) -> None:
-    """Build (or rebuild) the ChromaDB embedding index for 'analyzer llm ask'.
+    """Build (or rebuild) the ChromaDB embedding index for 'logsense llm ask'.
 
     Requires: pip install chromadb
     Requires: Ollama running with the embed model available.

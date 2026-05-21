@@ -45,7 +45,7 @@ from logsense.storage.findings_repo import FindingsRepository, meets_min_severit
 
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
 
-app = typer.Typer(name="analyzer", help="Local log analyzer with LLM support.")
+app = typer.Typer(name="logsense", help="LogSense — local log analysis with LLM support.")
 app.command("tail")(tail_cmd.tail_watch)
 app.command("serve")(serve_cmd.serve)
 rules_app = typer.Typer(help="Manage detection rules.")

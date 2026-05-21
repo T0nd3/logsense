@@ -75,7 +75,7 @@ def findings_list(
         summary = repo.summary()
 
     if not rows:
-        typer.echo("No findings stored yet. Run 'analyzer scan --track-errors' first.")
+        typer.echo("No findings stored yet. Run 'logsense scan --track-errors' first.")
         return
 
     total = summary["total"]
@@ -151,7 +151,7 @@ def findings_summary(
         top_rules = repo.count_by_rule(limit=10)
 
     if s["total"] == 0:
-        typer.echo("No findings stored yet. Run 'analyzer scan --track-errors' first.")
+        typer.echo("No findings stored yet. Run 'logsense scan --track-errors' first.")
         return
 
     sep = "-" * 50
@@ -203,8 +203,8 @@ def findings_dismiss(
 
     Examples::
 
-        analyzer findings dismiss SSH_BRUTE_FORCE
-        analyzer findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
+        logsense findings dismiss SSH_BRUTE_FORCE
+        logsense findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
     """
     with _open_dismiss_repo(config) as repo:
         added = repo.dismiss(rule_id, source=source, reason=reason)

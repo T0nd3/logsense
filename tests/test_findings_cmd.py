@@ -73,7 +73,7 @@ def empty_db(tmp_path: Path) -> Path:
 
 def _cfg_args(db_path: Path) -> list[str]:
     """Return --config args pointing to a temp config that uses db_path."""
-    cfg_file = db_path.parent / "analyzer.yaml"
+    cfg_file = db_path.parent / "logsense.yaml"
     cfg_file.write_text(f"db_path: {db_path}\n")
     return ["--config", str(cfg_file)]
 

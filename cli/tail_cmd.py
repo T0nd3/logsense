@@ -1,4 +1,4 @@
-"""Realtime log tailing — `analyzer tail <file>`.
+"""Realtime log tailing — `logsense tail <file>`.
 
 Watches a log file for new lines, applies PII redaction and the rule
 engine on each incoming event, and prints findings immediately with

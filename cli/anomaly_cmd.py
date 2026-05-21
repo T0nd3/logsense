@@ -43,7 +43,7 @@ def anomaly_learn(
     """Feed a log file into the baseline (observe mode).
 
     Run this several times on representative logs before enabling
-    --detect-anomalies in 'analyzer scan'.  At least 5 buckets are needed
+    --detect-anomalies in 'logsense scan'.  At least 5 buckets are needed
     before the baseline is considered trained.
     """
     if not path.exists():
@@ -124,7 +124,7 @@ def anomaly_status(
         sources = repo.list_sources()
 
     if not sources:
-        typer.echo("No baseline data. Run 'analyzer anomaly learn <log>' first.")
+        typer.echo("No baseline data. Run 'logsense anomaly learn <log>' first.")
         return
 
     typer.echo(f"\n  {'SOURCE KEY':<30} {'BUCKETS':>8}  STATUS")

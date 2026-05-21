@@ -316,7 +316,7 @@ def demo_run(
 
     # ── 1. Log Parsing ─────────────────────────────────────────────────────
     _h("1 / 7  -- Log Parsing")
-    typer.echo("\n  $ analyzer scan /var/log/app.log\n")
+    typer.echo("\n  $ logsense scan /var/log/app.log\n")
     typer.echo("  Formats auto-detected: nginx, syslog, json\n")
 
     typer.echo(f"  {'#':>6}  {'TIMESTAMP':<20} {'SEV':<8}  {'FORMAT':<8}  MESSAGE")
@@ -363,14 +363,14 @@ def demo_run(
         typer.echo(typer.style(line, fg=color))
 
     typer.echo("\n  Rule formats supported: YAML (native) and Sigma.")
-    typer.echo("  Custom rules: analyzer rules validate my_rule.yml")
-    typer.echo("  List rules  : analyzer rules list")
+    typer.echo("  Custom rules: logsense rules validate my_rule.yml")
+    typer.echo("  List rules  : logsense rules list")
     _pause(no_pause)
 
     # ── 4. Error Tracking ──────────────────────────────────────────────────
     _h("4 / 7  -- Error Tracking  (--track-errors)")
     typer.echo("\n  Errors are deduplicated by fingerprint and persisted to SQLite.\n")
-    typer.echo("  $ analyzer errors list\n")
+    typer.echo("  $ logsense errors list\n")
 
     typer.echo("  5 error types  (103 total occurrences)\n")
     typer.echo(f"  {'FINGERPRINT':<14} {'SEV':<10} {'COUNT':>6}  {'LAST SEEN':<20} TYPE")
@@ -381,15 +381,15 @@ def demo_run(
         sev_label = typer.style(sev.upper().ljust(10), fg=color)
         typer.echo(f"  {fp:<14} {sev_label} {count:>6}  {_ts(offset):<20} {etype}")
 
-    typer.echo("\n  Extras: analyzer errors show <fp>  |  analyzer errors new --since 24h")
-    typer.echo("          analyzer errors regression  (errors that reappeared after silence)")
+    typer.echo("\n  Extras: logsense errors show <fp>  |  logsense errors new --since 24h")
+    typer.echo("          logsense errors regression  (errors that reappeared after silence)")
     _pause(no_pause)
 
     # ── 5. Finding Persistence ─────────────────────────────────────────────
     _h("5 / 7  -- Finding Persistence  (HIGH / CRITICAL)")
     typer.echo("\n  HIGH and CRITICAL findings are stored to SQLite automatically.")
     typer.echo("  Re-scanning the same file never creates duplicates.\n")
-    typer.echo("  $ analyzer findings list\n")
+    typer.echo("  $ logsense findings list\n")
 
     typer.echo("  3 finding(s) total -- showing 3\n")
     typer.echo(f"  {'SEV':<10} {'RULE':<28} {'SOURCE':<20} {'WHEN':<20} MESSAGE")
@@ -402,7 +402,7 @@ def demo_run(
 
     typer.echo("\n  Auto-cleanup: findings older than 30 days are deleted on each scan.")
     typer.echo("  Configure   : findings_retention_days / findings_min_severity in config.yaml")
-    typer.echo("\n  $ analyzer findings summary")
+    typer.echo("\n  $ logsense findings summary")
 
     typer.echo(f"\n  {sep[:50]}")
     typer.echo("  Total findings : 3")
@@ -421,7 +421,7 @@ def demo_run(
     _h("6 / 7  -- Statistical Anomaly Detection")
     typer.echo("\n  Detects unusual activity by comparing current metrics to a baseline.")
     typer.echo("  Baseline is built automatically from previous scans (>=5 buckets).\n")
-    typer.echo("  $ analyzer scan app.log --detect-anomalies\n")
+    typer.echo("  $ logsense scan app.log --detect-anomalies\n")
 
     typer.echo("  Anomaly detected -- source: app.log\n")
     typer.echo(f"  {'FEATURE':<18} {'BASELINE':>10}  {'CURRENT':>10}  {'Z-SCORE':>8}  STATUS")
@@ -437,9 +437,9 @@ def demo_run(
         typer.echo(f"  {feature:<18} {baseline:>9.1f}   {current:>9.1f}   {zscore:>+7.1f}  {flag}")
 
     typer.echo(f"\n  >> Finding: [HIGH] Anomaly in error_rate (z=+4.1) at {_ts(140)}")
-    typer.echo("\n  Training:  analyzer anomaly learn app.log")
-    typer.echo("  Status:    analyzer anomaly status")
-    typer.echo("  Reset:     analyzer anomaly reset --source app.log")
+    typer.echo("\n  Training:  logsense anomaly learn app.log")
+    typer.echo("  Status:    logsense anomaly status")
+    typer.echo("  Reset:     logsense anomaly reset --source app.log")
     _pause(no_pause)
 
     # ── 7. LLM Integration ────────────────────────────────────────────────
@@ -447,7 +447,7 @@ def demo_run(
     typer.echo("\n  Supported providers: Ollama (local), Claude, OpenAI, Groq,")
     typer.echo("  Mistral, LM Studio, and any OpenAI-compatible API.\n")
 
-    typer.echo("  $ analyzer llm info\n")
+    typer.echo("  $ logsense llm info\n")
     typer.echo(f"  {sep[:55]}")
     typer.echo("  Provider : ollama")
     typer.echo("  Model    : gemma3:4b")
@@ -460,20 +460,20 @@ def demo_run(
     typer.echo("    nomic-embed-text")
     typer.echo(f"  {sep[:55]}")
 
-    typer.echo("\n  $ analyzer llm explain a1b2c3d4\n")
+    typer.echo("\n  $ logsense llm explain a1b2c3d4\n")
     typer.echo("  Explaining [a1b2c3d4] SSH_BRUTE_FORCE ...\n")
     typer.echo("  Provider: ollama  Model: gemma3:4b\n")
     typer.echo("-" * 55)
     _stream_fake(_LLM_EXPLAIN, no_pause=no_pause)
     typer.echo("-" * 55)
 
-    typer.echo("\n  $ analyzer scan app.log --classify\n")
+    typer.echo("\n  $ logsense scan app.log --classify\n")
     typer.echo("  LLM classification (9 event sample, model: gemma3:4b):\n")
     typer.echo("-" * 55)
     _stream_fake(_LLM_CLASSIFY, delay=0.008, no_pause=no_pause)
     typer.echo("-" * 55)
 
-    typer.echo('\n  $ analyzer llm ask "any brute force attempts this week?"\n')
+    typer.echo('\n  $ logsense llm ask "any brute force attempts this week?"\n')
     typer.echo("  Q: any brute force attempts this week?")
     typer.echo("  Provider: ollama  Context: 3 chunk(s) (keyword)\n")
     typer.echo("-" * 55)
@@ -491,17 +491,17 @@ def demo_run(
     typer.echo("""
   Quick-start:
 
-    analyzer scan /var/log/syslog --track-errors --detect-anomalies
-    analyzer errors list
-    analyzer findings list
-    analyzer llm info
-    analyzer llm explain <fingerprint>
-    analyzer llm ask "what happened last night?"
+    logsense scan /var/log/syslog --track-errors --detect-anomalies
+    logsense errors list
+    logsense findings list
+    logsense llm info
+    logsense llm explain <fingerprint>
+    logsense llm ask "what happened last night?"
 
   Populate the web dashboard with demo data:
 
-    analyzer demo seed
-    analyzer serve
+    logsense demo seed
+    logsense serve
 
   Configuration (config.yaml):
 
@@ -512,8 +512,8 @@ def demo_run(
     findings_retention_days: 30
     findings_min_severity: high
 
-  Run this demo again:  analyzer demo run
-  Run without pauses:   analyzer demo run --no-pause
+  Run this demo again:  logsense demo run
+  Run without pauses:   logsense demo run --no-pause
 """)
 
 
@@ -542,7 +542,7 @@ def demo_seed(
     """Populate the database with synthetic demo data for the web dashboard.
 
     Findings and errors are tagged internally so they can be removed cleanly
-    with 'analyzer demo clear' without affecting real data.
+    with 'logsense demo clear' without affecting real data.
     """
     import json
     import sqlite3
@@ -610,7 +610,7 @@ def demo_seed(
     if findings_inserted == 0 and errors_inserted == 0:
         typer.echo(
             typer.style(
-                "  Demo data already present. Run 'analyzer demo clear' first to reseed.",
+                "  Demo data already present. Run 'logsense demo clear' first to reseed.",
                 fg=typer.colors.YELLOW,
             )
         )
@@ -622,8 +622,8 @@ def demo_seed(
     typer.echo(f"  Findings  : {findings_inserted} inserted (spread over 14 days)")
     typer.echo(f"  Errors    : {errors_inserted} groups / {occurrences_inserted} occurrences")
     typer.echo(f"  Database  : {cfg.db_path}")
-    typer.echo("\n  Open the dashboard:  analyzer serve")
-    typer.echo("  Remove demo data:    analyzer demo clear")
+    typer.echo("\n  Open the dashboard:  logsense serve")
+    typer.echo("  Remove demo data:    logsense demo clear")
     typer.echo(f"  {sep}\n")
 
 
@@ -638,7 +638,7 @@ def demo_clear(
 ) -> None:
     """Remove all synthetic demo data from the database.
 
-    Only records tagged by 'analyzer demo seed' are deleted.
+    Only records tagged by 'logsense demo seed' are deleted.
     Real findings and errors are never touched.
     """
     import sqlite3

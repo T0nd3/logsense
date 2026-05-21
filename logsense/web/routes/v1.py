@@ -207,7 +207,7 @@ def v1_ingest(
     """Parse a single raw log line and evaluate it against built-in rules.
 
     Returns any triggered findings. Events are NOT persisted — use
-    `analyzer scan --track-errors` for batch persistence.
+    `logsense scan --track-errors` for batch persistence.
 
     **format** (optional): `syslog`, `nginx`, `json_lines`, `plaintext`.
     Auto-detected if omitted.

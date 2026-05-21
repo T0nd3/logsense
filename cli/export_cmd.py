@@ -1,4 +1,4 @@
-"""CLI command group: analyzer export."""
+"""CLI command group: logsense export."""
 
 from __future__ import annotations
 
@@ -42,9 +42,9 @@ def export_report(
 
     Examples::
 
-        analyzer export report
-        analyzer export report --since 24h --severity high --output daily.md
-        analyzer export report --open
+        logsense export report
+        logsense export report --since 24h --severity high --output daily.md
+        logsense export report --open
     """
     from logsense.config import Config
     from logsense.export.markdown import generate_report
