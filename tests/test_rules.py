@@ -4,7 +4,13 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from log_analyzer.models import Event, FindingSeverity, Severity
-from log_analyzer.rules.engine import RuleEngine, _get_field
+from log_analyzer.rules.engine import (
+    RuleEngine,
+    _eval_count,
+    _extract_group_key,
+    _get_field,
+    _ts_utc,
+)
 from log_analyzer.rules.loader import load_rules_dir, validate_rule_file
 from log_analyzer.rules.model import Rule
 from log_analyzer.rules.sigma import load_sigma_file
@@ -304,7 +310,7 @@ detection:
         assert "evtx" in (rule.logsource_formats or [])
         assert any(c.field == "parsed_fields.event_id" for c in rule.match)
 
-    def test_sigma_count_by_field(self, tmp_path):
+    def test_sigma_count_by_field(self, tmp_path):  # noqa: keep existing tests above
         p = self._sigma_rule(
             tmp_path,
             """
@@ -323,3 +329,206 @@ detection:
         rule = load_sigma_file(p)
         assert rule.aggregate is not None
         assert rule.aggregate.group_by == "parsed_fields.ip_address"
+
+
+# ---------------------------------------------------------------------------
+# _get_field — untested field paths
+# ---------------------------------------------------------------------------
+
+
+class TestGetFieldExtended:
+    def test_raw_field(self):
+        ev = _event("msg")
+        ev.raw = "raw line content"
+        assert _get_field(ev, "raw") == "raw line content"
+
+    def test_source_field(self):
+        ev = Event(raw="x", source="auth.log", message="x", severity=Severity.INFO)
+        assert _get_field(ev, "source") == "auth.log"
+
+    def test_severity_field(self):
+        ev = _event("x")
+        assert _get_field(ev, "severity") == "info"
+
+    def test_unknown_field_returns_none(self):
+        assert _get_field(_event("x"), "no_such_field") is None
+
+
+# ---------------------------------------------------------------------------
+# _match_condition — untested operators
+# ---------------------------------------------------------------------------
+
+
+class TestMatchConditionOperators:
+    def _rule(self, op: str, value: str, field: str = "message") -> "Rule":
+        return _make_rule([{"field": field, "op": op, "value": value}])
+
+    def test_ne_matches(self):
+        engine = RuleEngine([self._rule("ne", "ok")])
+        assert len(engine.process(_event("error"))) == 1
+
+    def test_ne_no_match(self):
+        engine = RuleEngine([self._rule("ne", "error")])
+        assert engine.process(_event("error")) == []
+
+    def test_startswith_matches(self):
+        engine = RuleEngine([self._rule("startswith", "CRIT")])
+        assert len(engine.process(_event("CRITICAL: disk full"))) == 1
+
+    def test_startswith_no_match(self):
+        engine = RuleEngine([self._rule("startswith", "CRIT")])
+        assert engine.process(_event("info: all fine")) == []
+
+    def test_endswith_matches(self):
+        engine = RuleEngine([self._rule("endswith", "failed")])
+        assert len(engine.process(_event("login failed"))) == 1
+
+    def test_endswith_no_match(self):
+        engine = RuleEngine([self._rule("endswith", "failed")])
+        assert engine.process(_event("login succeeded")) == []
+
+    def test_gt_matches(self):
+        engine = RuleEngine([self._rule("gt", "400", field="parsed_fields.status")])
+        assert len(engine.process(_event("x", status=500))) == 1
+
+    def test_gt_no_match(self):
+        engine = RuleEngine([self._rule("gt", "400", field="parsed_fields.status")])
+        assert engine.process(_event("x", status=400)) == []
+
+    def test_lt_matches(self):
+        engine = RuleEngine([self._rule("lt", "300", field="parsed_fields.status")])
+        assert len(engine.process(_event("x", status=200))) == 1
+
+    def test_lte_matches(self):
+        engine = RuleEngine([self._rule("lte", "404", field="parsed_fields.status")])
+        assert len(engine.process(_event("x", status=404))) == 1
+
+    def test_unknown_op_returns_no_match(self):
+        engine = RuleEngine([self._rule("unknown_op", "x")])
+        assert engine.process(_event("x")) == []
+
+    def test_none_field_value_returns_no_match(self):
+        """Condition on a missing parsed field returns no match."""
+        engine = RuleEngine([self._rule("eq", "foo", field="parsed_fields.missing")])
+        assert engine.process(_event("msg")) == []
+
+
+# ---------------------------------------------------------------------------
+# _eval_count — untested operators
+# ---------------------------------------------------------------------------
+
+
+class TestEvalCount:
+    def test_gt(self):
+        assert _eval_count(">", 5, 4) is True
+        assert _eval_count(">", 4, 4) is False
+
+    def test_eq(self):
+        assert _eval_count("==", 3, 3) is True
+        assert _eval_count("==", 3, 4) is False
+
+    def test_lte(self):
+        assert _eval_count("<=", 3, 3) is True
+        assert _eval_count("<=", 4, 3) is False
+
+    def test_lt(self):
+        assert _eval_count("<", 2, 3) is True
+        assert _eval_count("<", 3, 3) is False
+
+    def test_unknown_op(self):
+        assert _eval_count("??", 5, 1) is False
+
+
+# ---------------------------------------------------------------------------
+# _extract_group_key
+# ---------------------------------------------------------------------------
+
+
+class TestExtractGroupKey:
+    def _agg(self, group_by=None, group_by_regex=None):
+        from log_analyzer.rules.model import AggregateCondition
+
+        return AggregateCondition(
+            count_op=">=",
+            count_val=1,
+            timeframe_seconds=60,
+            group_by=group_by,
+            group_by_regex=group_by_regex,
+        )
+
+    def test_group_by_field(self):
+        agg = self._agg(group_by="source")
+        ev = Event(raw="x", source="auth.log", message="x", severity=Severity.INFO)
+        assert _extract_group_key(agg, ev) == "auth.log"
+
+    def test_group_by_field_none_value(self):
+        agg = self._agg(group_by="parsed_fields.missing")
+        assert _extract_group_key(agg, _event("x")) == "__none__"
+
+    def test_group_by_regex_matches(self):
+        agg = self._agg(group_by_regex=r"from (\S+) port")
+        ev = _event("Failed password from 10.0.0.1 port 22")
+        assert _extract_group_key(agg, ev) == "10.0.0.1"
+
+    def test_group_by_regex_no_match_returns_global(self):
+        agg = self._agg(group_by_regex=r"from (\S+) port")
+        assert _extract_group_key(agg, _event("no ip here")) == "__global__"
+
+    def test_no_group_by_returns_global(self):
+        agg = self._agg()
+        assert _extract_group_key(agg, _event("x")) == "__global__"
+
+
+# ---------------------------------------------------------------------------
+# RuleEngine.reset() and window expiry
+# ---------------------------------------------------------------------------
+
+
+class TestRuleEngineReset:
+    def test_reset_clears_buffers(self):
+        rule = _make_rule(
+            [{"field": "message", "op": "contains", "value": "fail"}],
+            agg={"count": ">= 2", "timeframe": "5m"},
+        )
+        engine = RuleEngine([rule])
+        base = datetime.now(tz=UTC)
+        engine.process(_event("fail", ts=base))
+        engine.reset()
+        # After reset, buffer is empty — a single event should not fire
+        findings = engine.process(_event("fail", ts=base + timedelta(seconds=1)))
+        assert findings == []
+
+    def test_old_events_expire_from_window(self):
+        rule = _make_rule(
+            [{"field": "message", "op": "contains", "value": "fail"}],
+            agg={"count": ">= 3", "timeframe": "10s"},
+        )
+        engine = RuleEngine([rule])
+        base = datetime.now(tz=UTC)
+        # Two events within window
+        engine.process(_event("fail", ts=base))
+        engine.process(_event("fail", ts=base + timedelta(seconds=5)))
+        # Third event 20s later — the first two have expired
+        findings = engine.process(_event("fail", ts=base + timedelta(seconds=25)))
+        assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# _ts_utc helper
+# ---------------------------------------------------------------------------
+
+
+class TestTsUtc:
+    def test_naive_datetime_gets_utc(self):
+        from datetime import datetime
+
+        naive = datetime(2026, 1, 1, 12, 0, 0)
+        result = _ts_utc(naive)
+        assert result.tzinfo is not None
+
+    def test_aware_datetime_unchanged(self):
+        from datetime import datetime, timezone
+
+        aware = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        result = _ts_utc(aware)
+        assert result == aware
