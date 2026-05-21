@@ -55,6 +55,9 @@ Thumbs.db
 # Claude Code local settings
 .claude/
 
+# Private planning / strategy docs — not for the public repo
+Log-Analyzer.md
+
 # Logs (never commit real log files)
 *.log
 *.log.*
