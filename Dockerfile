@@ -10,10 +10,10 @@ FROM python:3.11-slim AS builder
 WORKDIR /build
 
 COPY pyproject.toml .
-COPY log_analyzer/ log_analyzer/
+COPY logsense/ logsense/
 COPY cli/ cli/
 
-# Regular (non-editable) install so cli/ and log_analyzer/ are physically
+# Regular (non-editable) install so cli/ and logsense/ are physically
 # copied into site-packages — no dependency on the source directory at runtime.
 RUN pip install --no-cache-dir --prefix=/install ".[web]"
 
@@ -32,7 +32,7 @@ COPY --from=builder /install /usr/local
 
 # Minimal default config: point the database at the persistent /data volume.
 # Override by mounting your own file: -v ./config.yaml:/app/config.yaml:ro
-RUN echo "db_path: /data/log_analyzer.db" > /app/config.yaml
+RUN echo "db_path: /data/logsense.db" > /app/config.yaml
 
 # Persistent data directory (SQLite db, optional config override)
 RUN mkdir -p /data

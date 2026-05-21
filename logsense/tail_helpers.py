@@ -11,7 +11,7 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from log_analyzer.models import Finding
+    from logsense.models import Finding
 
 _SEV_ORDER: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 

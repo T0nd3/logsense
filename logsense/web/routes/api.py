@@ -11,9 +11,9 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from log_analyzer.config import Config
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.config import Config
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
 
 from ..deps import errors_repo, findings_repo, get_config, get_templates
 
@@ -139,9 +139,9 @@ async def api_upload(
 
     Nothing is written to the database — results are shown in-page only.
     """
-    from log_analyzer.adapters.file import FileAdapter
-    from log_analyzer.parsers.detector import FormatDetector
-    from log_analyzer.pii.redactor import PIIRedactor, RedactMode
+    from logsense.adapters.file import FileAdapter
+    from logsense.parsers.detector import FormatDetector
+    from logsense.pii.redactor import PIIRedactor, RedactMode
 
     filename = file.filename or "upload.log"
 
@@ -265,7 +265,7 @@ def api_explain(
     explanation = ""
     error = ""
     try:
-        from log_analyzer.llm.factory import make_llm_client
+        from logsense.llm.factory import make_llm_client
 
         client = make_llm_client(cfg.llm)
         if not client.is_available():

@@ -6,11 +6,11 @@ from typing import Annotated, Optional
 
 import typer
 
-from log_analyzer.anomaly.baseline import compute_stats
-from log_analyzer.anomaly.features import FeatureExtractor
-from log_analyzer.config import Config
-from log_analyzer.pii.redactor import PIIRedactor, RedactMode
-from log_analyzer.storage.baseline_repo import BaselineRepository
+from logsense.anomaly.baseline import compute_stats
+from logsense.anomaly.features import FeatureExtractor
+from logsense.config import Config
+from logsense.pii.redactor import PIIRedactor, RedactMode
+from logsense.storage.baseline_repo import BaselineRepository
 
 app = typer.Typer(help="Manage the statistical anomaly detection baseline.")
 
@@ -58,7 +58,7 @@ def anomaly_learn(
 
     # --- Parse log file -------------------------------------------------------
     async def _collect():
-        from log_analyzer.adapters.file import FileAdapter
+        from logsense.adapters.file import FileAdapter
 
         adapter = FileAdapter(path)
         evts = []

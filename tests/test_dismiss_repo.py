@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from log_analyzer.storage.dismiss_repo import DismissRepository
+from logsense.storage.dismiss_repo import DismissRepository
 
 
 @pytest.fixture()

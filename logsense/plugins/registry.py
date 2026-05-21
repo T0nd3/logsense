@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from log_analyzer.rules.model import Rule
+from logsense.rules.model import Rule
 
 
 @dataclass
@@ -44,7 +44,7 @@ class PluginRegistry:
                 },
             })
         """
-        from log_analyzer.rules.loader import rule_from_dict
+        from logsense.rules.loader import rule_from_dict
 
         rule = rule_from_dict(data, source_file="<plugin>")
         self.rules.append(rule)

@@ -11,7 +11,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from cli.main import _format_event, _format_finding, app
-from log_analyzer.models import Event, Finding, FindingSeverity, Severity
+from logsense.models import Event, Finding, FindingSeverity, Severity
 
 runner = CliRunner()
 
@@ -339,9 +339,9 @@ class TestExportMarkdown:
     def _seed(self, db_path: Path) -> None:
         from datetime import UTC, datetime
 
-        from log_analyzer.models import Finding, FindingSeverity
-        from log_analyzer.storage.errors_repo import ErrorsRepository
-        from log_analyzer.storage.findings_repo import FindingsRepository
+        from logsense.models import Finding, FindingSeverity
+        from logsense.storage.errors_repo import ErrorsRepository
+        from logsense.storage.findings_repo import FindingsRepository
 
         now = datetime.now(tz=UTC)
         findings = [
@@ -375,7 +375,7 @@ class TestExportMarkdown:
             )
 
     def test_generate_report_returns_string(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -384,7 +384,7 @@ class TestExportMarkdown:
         assert len(report) > 100
 
     def test_report_has_header(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -392,7 +392,7 @@ class TestExportMarkdown:
         assert "# LogSense Security Report" in report
 
     def test_report_has_summary_section(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -400,7 +400,7 @@ class TestExportMarkdown:
         assert "## Summary" in report
 
     def test_report_contains_rule_ids(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -408,7 +408,7 @@ class TestExportMarkdown:
         assert "SSH_BRUTE" in report
 
     def test_report_contains_error_types(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -416,7 +416,7 @@ class TestExportMarkdown:
         assert "TimeoutError" in report
 
     def test_report_custom_title(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
+        from logsense.export.markdown import generate_report
 
         db = tmp_path / "test.db"
         self._seed(db)
@@ -424,8 +424,8 @@ class TestExportMarkdown:
         assert "My Custom Report" in report
 
     def test_report_empty_db(self, tmp_path: Path) -> None:
-        from log_analyzer.export.markdown import generate_report
-        from log_analyzer.storage.findings_repo import FindingsRepository
+        from logsense.export.markdown import generate_report
+        from logsense.storage.findings_repo import FindingsRepository
 
         db = tmp_path / "empty.db"
         with FindingsRepository(db):
@@ -435,7 +435,7 @@ class TestExportMarkdown:
         assert "0" in report
 
     def test_md_table_helper(self) -> None:
-        from log_analyzer.export.markdown import _md_table
+        from logsense.export.markdown import _md_table
 
         table = _md_table(["A", "B"], [["x", "y"], ["1", "2"]])
         assert "| A | B |" in table
@@ -443,12 +443,12 @@ class TestExportMarkdown:
         assert "---" in table
 
     def test_escape_pipe_characters(self) -> None:
-        from log_analyzer.export.markdown import _escape
+        from logsense.export.markdown import _escape
 
         assert "\\|" in _escape("a|b")
 
     def test_escape_truncates_long_text(self) -> None:
-        from log_analyzer.export.markdown import _escape
+        from logsense.export.markdown import _escape
 
         result = _escape("x" * 200, max_len=80)
         assert len(result) <= 82  # 80 + "…"

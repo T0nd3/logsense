@@ -1,7 +1,7 @@
 # Log-Analyzer / LogSense config example — copy to config.yaml and adapt
 
 pii_salt: ""           # set here or via LOG_ANALYZER_PII_SALT env var
-db_path: log_analyzer.db  # use /data/log_analyzer.db inside Docker
+db_path: logsense.db  # use /data/logsense.db inside Docker
 pii_rules_path: pii_rules.yaml
 
 # REST API auth — leave empty to disable (local dev / Docker with firewall)

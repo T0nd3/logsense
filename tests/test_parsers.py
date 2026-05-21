@@ -1,7 +1,7 @@
-from log_analyzer.models import Severity
-from log_analyzer.parsers.json_lines import JsonLinesParser
-from log_analyzer.parsers.nginx import NginxCombinedParser
-from log_analyzer.parsers.syslog import AuthLogParser, SyslogParser
+from logsense.models import Severity
+from logsense.parsers.json_lines import JsonLinesParser
+from logsense.parsers.nginx import NginxCombinedParser
+from logsense.parsers.syslog import AuthLogParser, SyslogParser
 
 
 class TestJsonLinesParser:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from log_analyzer.plugins.loader import load_plugins
-from log_analyzer.plugins.registry import PluginRegistry
+from logsense.plugins.loader import load_plugins
+from logsense.plugins.registry import PluginRegistry
 
 # ---------------------------------------------------------------------------
 # PluginRegistry

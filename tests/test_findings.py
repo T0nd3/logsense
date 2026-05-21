@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from log_analyzer.models import Event, Finding, FindingSeverity, Severity
-from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_severity
+from logsense.models import Event, Finding, FindingSeverity, Severity
+from logsense.storage.findings_repo import FindingsRepository, meets_min_severity
 
 # ---------------------------------------------------------------------------
 # Helpers

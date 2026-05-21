@@ -9,8 +9,8 @@ import pytest
 from typer.testing import CliRunner
 
 from cli.findings_cmd import _parse_hours, app
-from log_analyzer.models import Finding, FindingSeverity
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.models import Finding, FindingSeverity
+from logsense.storage.findings_repo import FindingsRepository
 
 runner = CliRunner()
 

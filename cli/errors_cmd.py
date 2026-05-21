@@ -6,8 +6,8 @@ from typing import Annotated, Optional
 
 import typer
 
-from log_analyzer.config import Config
-from log_analyzer.storage.errors_repo import ErrorsRepository
+from logsense.config import Config
+from logsense.storage.errors_repo import ErrorsRepository
 
 app = typer.Typer(help="Browse and query tracked errors.")
 

@@ -7,9 +7,9 @@ from collections.abc import Generator
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
-from log_analyzer.config import Config
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.config import Config
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
 
 
 def get_config(request: Request) -> Config:

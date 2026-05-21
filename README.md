@@ -521,7 +521,7 @@ Copy `config.yaml.example` to `config.yaml` and adapt:
 
 ```yaml
 # SQLite database for findings, errors, and baselines
-db_path: log_analyzer.db        # use /data/log_analyzer.db inside Docker
+db_path: logsense.db        # use /data/logsense.db inside Docker
 
 # Custom PII patterns file (optional)
 pii_rules_path: pii_rules.yaml
@@ -614,7 +614,7 @@ Or register patterns via the [Plugin System](#plugin-system).
 
 ## Detection Rules
 
-Rules live in `log_analyzer/rules/builtin/` (shipped) or any YAML file you point to with `--rules-dir`.
+Rules live in `logsense/rules/builtin/` (shipped) or any YAML file you point to with `--rules-dir`.
 
 ### Built-in rules
 
@@ -925,7 +925,7 @@ ruff format .
 ### Project layout
 
 ```
-log_analyzer/          Core library
+logsense/          Core library
   adapters/            File, stdin, tail, OpenSearch event adapters
   anomaly/             Statistical baseline and Z-score detector
   errors/              Error fingerprinting and grouping

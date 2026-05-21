@@ -34,8 +34,8 @@ def serve(
         )
         raise typer.Exit(1)
 
-    from log_analyzer.config import Config
-    from log_analyzer.web.app import create_app
+    from logsense.config import Config
+    from logsense.web.app import create_app
 
     url = f"http://{host}:{port}"
     typer.echo(f"\n  LogSense dashboard -> {url}\n  Press Ctrl+C to stop.\n")
@@ -47,7 +47,7 @@ def serve(
         import uvicorn
 
         uvicorn.run(
-            "log_analyzer.web.app:create_reload_app",
+            "logsense.web.app:create_reload_app",
             host=host,
             port=port,
             reload=True,

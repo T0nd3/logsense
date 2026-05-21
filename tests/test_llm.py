@@ -12,21 +12,21 @@ from pathlib import Path
 
 import pytest
 
-from log_analyzer.config import LLMConfig
-from log_analyzer.llm.base import AbstractLLMClient
-from log_analyzer.llm.client import OllamaClient, OllamaError
-from log_analyzer.llm.factory import make_embed_client, make_llm_client
-from log_analyzer.llm.openai_compat import OpenAICompatibleClient
-from log_analyzer.llm.prompts import (
+from logsense.config import LLMConfig
+from logsense.llm.base import AbstractLLMClient
+from logsense.llm.client import OllamaClient, OllamaError
+from logsense.llm.factory import make_embed_client, make_llm_client
+from logsense.llm.openai_compat import OpenAICompatibleClient
+from logsense.llm.prompts import (
     ask_prompt,
     classify_events_prompt,
     explain_error_prompt,
     explain_finding_prompt,
     summarize_prompt,
 )
-from log_analyzer.llm.retrieval import _keywords, _sqlite_search, retrieve_context
-from log_analyzer.models import Finding, FindingSeverity
-from log_analyzer.storage.errors_repo import ErrorsRepository
+from logsense.llm.retrieval import _keywords, _sqlite_search, retrieve_context
+from logsense.models import Finding, FindingSeverity
+from logsense.storage.errors_repo import ErrorsRepository
 
 _T0 = datetime(2024, 3, 15, 10, 0, 0, tzinfo=UTC)
 

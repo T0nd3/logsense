@@ -4,7 +4,7 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from log_analyzer.models import Finding
+from logsense.models import Finding
 
 from .errors_schema import ERRORS_SCHEMA_SQL
 from .findings_schema import FINDINGS_SCHEMA_SQL

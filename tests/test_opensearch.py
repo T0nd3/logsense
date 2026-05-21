@@ -6,14 +6,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from log_analyzer.adapters.opensearch import _map_hit, _map_timestamp
-from log_analyzer.adapters.opensearch_config import (
+from logsense.adapters.opensearch import _map_hit, _map_timestamp
+from logsense.adapters.opensearch_config import (
     FieldMapping,
     OpenSearchQuery,
     TimeRange,
     build_query_dsl,
 )
-from log_analyzer.models import Severity
+from logsense.models import Severity
 
 # ---------------------------------------------------------------------------
 # Fixtures: mock opensearchpy so tests run without the optional dependency
@@ -205,8 +205,8 @@ class TestBuildQueryDsl:
 
 class TestOpenSearchAdapterPagination:
     async def test_fetches_all_pages(self, mock_opensearch_module):
-        from log_analyzer.adapters.opensearch import OpenSearchAdapter
-        from log_analyzer.adapters.opensearch_config import OpenSearchQuery
+        from logsense.adapters.opensearch import OpenSearchAdapter
+        from logsense.adapters.opensearch_config import OpenSearchQuery
 
         page1 = [
             _make_hit(
@@ -239,7 +239,7 @@ class TestOpenSearchAdapterPagination:
         assert mock_client.search.call_count == 2
 
     async def test_respects_max_events(self, mock_opensearch_module):
-        from log_analyzer.adapters.opensearch import OpenSearchAdapter
+        from logsense.adapters.opensearch import OpenSearchAdapter
 
         hits = [
             _make_hit({"@timestamp": "2026-05-18T10:00:00Z", "message": f"ev{i}"})

@@ -19,12 +19,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from log_analyzer import __version__
-from log_analyzer.config import Config
-from log_analyzer.models import Finding, FindingSeverity
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
-from log_analyzer.web.app import create_app
+from logsense import __version__
+from logsense.config import Config
+from logsense.models import Finding, FindingSeverity
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
+from logsense.web.app import create_app
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -240,8 +240,8 @@ class TestFindingsList:
         """
         import sqlite3 as _sqlite3
 
-        from log_analyzer.storage.findings_schema import FINDINGS_SCHEMA_SQL
-        from log_analyzer.storage.schema import SCHEMA_SQL
+        from logsense.storage.findings_schema import FINDINGS_SCHEMA_SQL
+        from logsense.storage.schema import SCHEMA_SQL
 
         old_ts = (datetime.now(tz=UTC) - timedelta(hours=48)).isoformat()
         conn = _sqlite3.connect(db_path)

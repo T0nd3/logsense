@@ -11,7 +11,7 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from log_analyzer.config import Config
+from logsense.config import Config
 
 from .deps import get_config
 

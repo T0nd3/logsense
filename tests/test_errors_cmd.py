@@ -9,7 +9,7 @@ import pytest
 from typer.testing import CliRunner
 
 from cli.errors_cmd import _parse_hours, app
-from log_analyzer.storage.errors_repo import ErrorsRepository
+from logsense.storage.errors_repo import ErrorsRepository
 
 runner = CliRunner()
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from log_analyzer.pii.redactor import RedactMode
+from logsense.pii.redactor import RedactMode
 
 
 class RedactModeArg(str, Enum):

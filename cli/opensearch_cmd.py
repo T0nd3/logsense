@@ -6,20 +6,20 @@ from typing import Annotated, Optional
 
 import typer
 
-from log_analyzer.adapters.opensearch import OpenSearchAdapter
-from log_analyzer.adapters.opensearch_config import (
+from logsense.adapters.opensearch import OpenSearchAdapter
+from logsense.adapters.opensearch_config import (
     FieldMapping,
     OpenSearchAuth,
     OpenSearchQuery,
     TimeRange,
 )
-from log_analyzer.config import Config
-from log_analyzer.models import Event, Finding
-from log_analyzer.pii.redactor import PIIRedactor, RedactMode
-from log_analyzer.rules.engine import RuleEngine
-from log_analyzer.rules.loader import load_rules_dir
+from logsense.config import Config
+from logsense.models import Event, Finding
+from logsense.pii.redactor import PIIRedactor, RedactMode
+from logsense.rules.engine import RuleEngine
+from logsense.rules.loader import load_rules_dir
 
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "builtin"
+_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
 
 app = typer.Typer(help="Query logs from an OpenSearch / Elasticsearch cluster.")
 
@@ -208,8 +208,8 @@ def opensearch_info(
 ) -> None:
     """Check cluster connectivity and print basic cluster info."""
     try:
-        from log_analyzer.adapters.opensearch import _make_client
-        from log_analyzer.adapters.opensearch_config import OpenSearchAuth
+        from logsense.adapters.opensearch import _make_client
+        from logsense.adapters.opensearch_config import OpenSearchAuth
     except ImportError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)

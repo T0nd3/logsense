@@ -66,7 +66,7 @@ class Config:
     llm: LLMConfig = field(default_factory=LLMConfig)
     opensearch: OpenSearchConfig = field(default_factory=OpenSearchConfig)
     pii_rules_path: Path = field(default_factory=lambda: Path("pii_rules.yaml"))
-    db_path: Path = field(default_factory=lambda: Path("log_analyzer.db"))
+    db_path: Path = field(default_factory=lambda: Path("logsense.db"))
     pii_salt: str = ""
     # Finding persistence (Option B)
     findings_retention_days: int = 30  # auto-cleanup older than N days
@@ -103,7 +103,7 @@ class Config:
             llm=llm,
             opensearch=OpenSearchConfig.from_dict(data.get("opensearch", {})),
             pii_rules_path=Path(data.get("pii_rules_path", "pii_rules.yaml")),
-            db_path=Path(data.get("db_path", "log_analyzer.db")),
+            db_path=Path(data.get("db_path", "logsense.db")),
             pii_salt=salt,
             findings_retention_days=int(data.get("findings_retention_days", 30)),
             findings_min_severity=data.get("findings_min_severity", "high"),

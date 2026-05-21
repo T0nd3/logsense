@@ -46,8 +46,8 @@ def export_report(
         analyzer export report --since 24h --severity high --output daily.md
         analyzer export report --open
     """
-    from log_analyzer.config import Config
-    from log_analyzer.export.markdown import generate_report
+    from logsense.config import Config
+    from logsense.export.markdown import generate_report
 
     cfg = Config.load(config)
 

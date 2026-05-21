@@ -5,16 +5,16 @@ from typing import Annotated, Optional
 
 import typer
 
-from log_analyzer.config import Config
-from log_analyzer.llm.base import AbstractLLMClient
-from log_analyzer.llm.factory import make_embed_client, make_llm_client
-from log_analyzer.llm.prompts import (
+from logsense.config import Config
+from logsense.llm.base import AbstractLLMClient
+from logsense.llm.factory import make_embed_client, make_llm_client
+from logsense.llm.prompts import (
     ask_prompt,
     explain_error_prompt,
     summarize_prompt,
 )
-from log_analyzer.llm.retrieval import build_chroma_index, retrieve_context
-from log_analyzer.storage.errors_repo import ErrorsRepository
+from logsense.llm.retrieval import build_chroma_index, retrieve_context
+from logsense.storage.errors_repo import ErrorsRepository
 
 app = typer.Typer(
     help="LLM-powered log analysis. Supports Ollama, Claude, and OpenAI-compatible APIs."

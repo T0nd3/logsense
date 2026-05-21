@@ -19,9 +19,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
-from log_analyzer.config import Config
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.config import Config
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
 
 from ..auth import require_token
 from ..deps import errors_repo, findings_repo, get_config
@@ -91,7 +91,7 @@ class EventOut(BaseModel):
 @health_router.get("/health", summary="Health check")
 def health() -> dict:
     """Returns {status: ok, version: ...}. No auth required. Use for liveness probes."""
-    from log_analyzer import __version__
+    from logsense import __version__
 
     return {"status": "ok", "version": __version__}
 
@@ -212,8 +212,8 @@ def v1_ingest(
     **format** (optional): `syslog`, `nginx`, `json_lines`, `plaintext`.
     Auto-detected if omitted.
     """
-    from log_analyzer.parsers.detector import FormatDetector, LogFormat
-    from log_analyzer.parsers.registry import get_parser
+    from logsense.parsers.detector import FormatDetector, LogFormat
+    from logsense.parsers.registry import get_parser
 
     # Resolve format
     if payload.format:
@@ -236,7 +236,7 @@ def v1_ingest(
         return {"parsed": False, "findings": []}
 
     # PII redaction — apply before rule engine so findings never contain raw PII
-    from log_analyzer.pii.redactor import PIIRedactor
+    from logsense.pii.redactor import PIIRedactor
 
     redactor = PIIRedactor.from_config(
         salt=cfg.pii_salt,
@@ -246,12 +246,12 @@ def v1_ingest(
     event.raw = redactor.redact(event.raw).text
 
     # Rule engine — loaded at startup via lifespan; lazy-init as fallback
-    from log_analyzer.rules.engine import RuleEngine
+    from logsense.rules.engine import RuleEngine
 
     if not hasattr(request.app.state, "rule_engine"):
         from pathlib import Path
 
-        from log_analyzer.rules.loader import load_rules_dir
+        from logsense.rules.loader import load_rules_dir
 
         _builtin = Path(__file__).parent.parent.parent / "rules" / "builtin"
         request.app.state.rule_engine = RuleEngine(list(load_rules_dir(_builtin)))

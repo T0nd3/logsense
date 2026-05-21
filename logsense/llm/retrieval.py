@@ -158,7 +158,7 @@ def _chroma_search(
 
     client = chromadb.PersistentClient(path=str(chroma_path))
     try:
-        col = client.get_collection("log_analyzer")
+        col = client.get_collection("logsense")
     except Exception:
         return []
 
@@ -196,10 +196,10 @@ def build_chroma_index(db_path: Path, chroma_path: Path, client) -> int:
     chroma = chromadb.PersistentClient(path=str(chroma_path))
     # Delete old collection if it exists
     try:
-        chroma.delete_collection("log_analyzer")
+        chroma.delete_collection("logsense")
     except Exception:
         pass
-    col = chroma.create_collection("log_analyzer")
+    col = chroma.create_collection("logsense")
 
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row

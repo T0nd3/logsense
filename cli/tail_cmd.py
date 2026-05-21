@@ -17,21 +17,21 @@ import typer
 
 from cli._types import REDACT_MAP, RedactModeArg
 from cli.colors import SEVERITY_COLOR
-from log_analyzer.adapters.tail import TailAdapter
-from log_analyzer.config import Config
-from log_analyzer.errors.tracker import ErrorTracker
-from log_analyzer.models import Finding
-from log_analyzer.pii.patterns import PIIPattern
-from log_analyzer.pii.redactor import PIIRedactor
-from log_analyzer.plugins.loader import load_plugins
-from log_analyzer.rules.engine import RuleEngine
-from log_analyzer.rules.loader import load_rules_dir
-from log_analyzer.storage.dismiss_repo import DismissRepository
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_severity
-from log_analyzer.tail_helpers import meets_alert_severity, post_webhook
+from logsense.adapters.tail import TailAdapter
+from logsense.config import Config
+from logsense.errors.tracker import ErrorTracker
+from logsense.models import Finding
+from logsense.pii.patterns import PIIPattern
+from logsense.pii.redactor import PIIRedactor
+from logsense.plugins.loader import load_plugins
+from logsense.rules.engine import RuleEngine
+from logsense.rules.loader import load_rules_dir
+from logsense.storage.dismiss_repo import DismissRepository
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository, meets_min_severity
+from logsense.tail_helpers import meets_alert_severity, post_webhook
 
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "builtin"
+_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
 
 
 # ---------------------------------------------------------------------------

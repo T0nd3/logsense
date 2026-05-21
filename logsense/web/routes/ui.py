@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
 
 from ..deps import errors_repo, findings_repo, get_templates
 

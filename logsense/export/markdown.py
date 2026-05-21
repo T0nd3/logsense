@@ -9,8 +9,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository
 
 # Severity display order (most critical first)
 _SEV_ORDER = ["critical", "high", "medium", "low"]

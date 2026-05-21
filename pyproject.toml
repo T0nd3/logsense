@@ -60,8 +60,8 @@ dev = [
 analyzer = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["log_analyzer", "cli"]
-artifacts = ["log_analyzer/web/templates/**"]
+packages = ["logsense", "cli"]
+artifacts = ["logsense/web/templates/**"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -116,7 +116,7 @@ ignore = [
 "cli/demo_cmd.py" = [
     "B007",   # unused loop vars in demo data unpacking — intentional
 ]
-"log_analyzer/adapters/tail.py" = [
+"logsense/adapters/tail.py" = [
     "SIM115", # open() without context manager — intentional (handle kept across yields)
 ]
 

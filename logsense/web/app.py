@@ -9,8 +9,8 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 
-from log_analyzer import __version__
-from log_analyzer.config import Config
+from logsense import __version__
+from logsense.config import Config
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
@@ -19,9 +19,9 @@ _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # type: ignore[type-arg]
     """Load rule engine (built-in + plugins) once at startup; nothing to teardown."""
-    from log_analyzer.plugins.loader import load_plugins
-    from log_analyzer.rules.engine import RuleEngine
-    from log_analyzer.rules.loader import load_rules_dir
+    from logsense.plugins.loader import load_plugins
+    from logsense.rules.engine import RuleEngine
+    from logsense.rules.loader import load_rules_dir
 
     cfg: Config = app.state.config
     rules = list(load_rules_dir(_BUILTIN_RULES_DIR))

@@ -37,7 +37,7 @@ htmlcov/
 *.db-shm
 *.db-wal
 chroma_index/
-log_analyzer.db
+logsense.db
 
 # Secrets / config overrides
 config.yaml

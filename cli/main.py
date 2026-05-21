@@ -18,32 +18,32 @@ from cli.export_cmd import app as export_app
 from cli.findings_cmd import app as findings_app
 from cli.llm_cmd import app as llm_app
 from cli.opensearch_cmd import app as opensearch_app
-from log_analyzer.adapters.file import FileAdapter
-from log_analyzer.adapters.stdin import StdinAdapter
-from log_analyzer.anomaly.baseline import compute_stats
-from log_analyzer.anomaly.detector import (
+from logsense.adapters.file import FileAdapter
+from logsense.adapters.stdin import StdinAdapter
+from logsense.anomaly.baseline import compute_stats
+from logsense.anomaly.detector import (
     anomaly_results_to_findings,
 )
-from log_analyzer.anomaly.detector import (
+from logsense.anomaly.detector import (
     detect_anomalies as run_anomaly_detection,
 )
-from log_analyzer.anomaly.features import FeatureExtractor
-from log_analyzer.config import Config
-from log_analyzer.errors.tracker import ErrorTracker
-from log_analyzer.models import Event, Finding
-from log_analyzer.parsers.detector import FormatDetector
-from log_analyzer.pii.patterns import PIIPattern
-from log_analyzer.pii.redactor import PIIRedactor
-from log_analyzer.plugins.loader import load_plugins
-from log_analyzer.rules.engine import RuleEngine
-from log_analyzer.rules.loader import load_rules_dir, validate_rule_file
-from log_analyzer.rules.sigma import SigmaConversionError, load_sigma_file
-from log_analyzer.storage.baseline_repo import BaselineRepository
-from log_analyzer.storage.dismiss_repo import DismissRepository
-from log_analyzer.storage.errors_repo import ErrorsRepository
-from log_analyzer.storage.findings_repo import FindingsRepository, meets_min_severity
+from logsense.anomaly.features import FeatureExtractor
+from logsense.config import Config
+from logsense.errors.tracker import ErrorTracker
+from logsense.models import Event, Finding
+from logsense.parsers.detector import FormatDetector
+from logsense.pii.patterns import PIIPattern
+from logsense.pii.redactor import PIIRedactor
+from logsense.plugins.loader import load_plugins
+from logsense.rules.engine import RuleEngine
+from logsense.rules.loader import load_rules_dir, validate_rule_file
+from logsense.rules.sigma import SigmaConversionError, load_sigma_file
+from logsense.storage.baseline_repo import BaselineRepository
+from logsense.storage.dismiss_repo import DismissRepository
+from logsense.storage.errors_repo import ErrorsRepository
+from logsense.storage.findings_repo import FindingsRepository, meets_min_severity
 
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "log_analyzer" / "rules" / "builtin"
+_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
 
 app = typer.Typer(name="analyzer", help="Local log analyzer with LLM support.")
 app.command("tail")(tail_cmd.tail_watch)
@@ -332,8 +332,8 @@ def scan(
     # LLM explanations for high/critical findings (optional)
     # ------------------------------------------------------------------
     if explain_findings and findings:
-        from log_analyzer.llm.factory import make_llm_client
-        from log_analyzer.llm.prompts import explain_finding_prompt
+        from logsense.llm.factory import make_llm_client
+        from logsense.llm.prompts import explain_finding_prompt
 
         priority = [f for f in findings if f.severity.value in ("high", "critical")][
             :3
@@ -374,8 +374,8 @@ def scan(
     # LLM classification of event sample (optional)
     # ------------------------------------------------------------------
     if classify and events:
-        from log_analyzer.llm.factory import make_llm_client
-        from log_analyzer.llm.prompts import classify_events_prompt
+        from logsense.llm.factory import make_llm_client
+        from logsense.llm.prompts import classify_events_prompt
 
         llm_client = make_llm_client(cfg.llm)
         if llm_client.is_cloud:
@@ -486,7 +486,7 @@ def rules_validate(
 @app.command()
 def version() -> None:
     """Print version."""
-    from log_analyzer import __version__
+    from logsense import __version__
 
     typer.echo(f"logsense {__version__}")
 

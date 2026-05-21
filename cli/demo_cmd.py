@@ -526,7 +526,7 @@ def _load_cfg(config: Path | None):
     """Load config, falling back to the LOGSENSE_CONFIG env var if set."""
     import os
 
-    from log_analyzer.config import Config
+    from logsense.config import Config
 
     if config is None:
         env_path = os.environ.get("LOGSENSE_CONFIG", "")
@@ -547,9 +547,9 @@ def demo_seed(
     import json
     import sqlite3
 
-    from log_analyzer.storage.errors_schema import ERRORS_SCHEMA_SQL
-    from log_analyzer.storage.findings_schema import FINDINGS_SCHEMA_SQL
-    from log_analyzer.storage.schema import SCHEMA_SQL
+    from logsense.storage.errors_schema import ERRORS_SCHEMA_SQL
+    from logsense.storage.findings_schema import FINDINGS_SCHEMA_SQL
+    from logsense.storage.schema import SCHEMA_SQL
 
     cfg = _load_cfg(config)
     now = datetime.now(tz=UTC)
