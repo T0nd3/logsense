@@ -109,7 +109,7 @@ def errors_show(
     if occs:
         typer.echo(f"\n  Last {len(occs)} occurrence(s):\n")
         for occ in occs:
-            lang = f" [{occ['stack_lang']}]" if occ.get("stack_lang") else ""
+            lang = f" [{occ['stack_lang']}]" if occ["stack_lang"] else ""
             typer.echo(f"  {_fmt_ts(occ['timestamp'])}  {occ['source']}{lang}")
             typer.echo(f"    {occ['sample'][:100]}")
     else:
