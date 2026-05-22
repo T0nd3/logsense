@@ -13,6 +13,9 @@ from ..models import Finding
 # Maximum characters included per context item (keeps prompts within token budget)
 _MAX_ITEM_CHARS = 400
 _MAX_CONTEXT_ITEMS = 8
+# A full stack trace is the richest signal for explaining an error, so give it
+# generous room — the prompt still stays well within the model context window.
+_MAX_STACK_CHARS = 4000
 
 
 # ---------------------------------------------------------------------------
@@ -71,15 +74,26 @@ def explain_error_prompt(error_row: dict, occurrences: list[dict] | None = None)
         f"  Normalized : {error_row.get('normalized_msg', '?')[:300]}",
     ]
 
+    occurrences = occurrences or []
+
+    # Include the full stack trace from the most recent occurrence that has one.
+    # The trace (function names, files, line numbers, call chain) is the richest
+    # signal the LLM gets without access to the source code.
+    trace_occ = next((o for o in occurrences if o.get("stack_trace")), None)
+    if trace_occ:
+        lang = trace_occ.get("stack_lang") or "unknown"
+        lines += [
+            "",
+            f"STACK TRACE ({lang}):",
+            trace_occ["stack_trace"][:_MAX_STACK_CHARS],
+        ]
+
     if occurrences:
         lines += ["", "RECENT SAMPLES:"]
         for occ in occurrences[:4]:
             sample = occ.get("sample", "")[:200]
             ts = occ.get("timestamp", "")[:19]
             lines.append(f"  [{ts}] {sample}")
-
-    if error_row.get("stack_lang"):
-        lines.append(f"\n  Stack language: {error_row['stack_lang']}")
 
     lines += [
         "",

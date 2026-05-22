@@ -525,6 +525,44 @@ class TestExplainErrorPrompt:
         p = explain_error_prompt(_error_row())
         assert "cause" in p.lower()
 
+    def test_includes_full_stack_trace(self):
+        trace = (
+            "Traceback (most recent call last):\n"
+            '  File "app.py", line 42, in handler\n'
+            '    raise ValueError("bad input")\n'
+            "ValueError: bad input"
+        )
+        occs = [
+            {
+                "sample": "ValueError: bad input",
+                "timestamp": "2024-03-15T10:00:00",
+                "stack_trace": trace,
+                "stack_lang": "python",
+            }
+        ]
+        p = explain_error_prompt(_error_row(), occs)
+        assert 'File "app.py", line 42' in p
+        assert "STACK TRACE (python)" in p
+
+    def test_long_stack_trace_truncated(self):
+        occs = [
+            {
+                "sample": "s",
+                "timestamp": "2024-03-15T10:00:00",
+                "stack_trace": "x" * 10000,
+                "stack_lang": "java",
+            }
+        ]
+        p = explain_error_prompt(_error_row(), occs)
+        assert "x" * 10000 not in p
+        assert "x" * 200 in p
+
+    def test_no_stack_section_without_trace(self):
+        occs = [{"sample": "plain error line", "timestamp": "2024-03-15T10:00:00"}]
+        p = explain_error_prompt(_error_row(), occs)
+        assert "STACK TRACE" not in p
+        assert "plain error line" in p
+
 
 class TestSummarizePrompt:
     def test_empty_rows(self):
