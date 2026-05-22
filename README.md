@@ -46,6 +46,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 - [Installation](#installation)
 - [CLI Reference](#cli-reference)
   - [scan](#scan)
+  - [Docker container logs](#docker-container-logs)
   - [tail](#tail)
   - [serve](#serve)
   - [findings](#findings)
@@ -197,6 +198,35 @@ logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog
 # Explain the worst findings with Ollama
 logsense scan /var/log/auth.log --track-errors --explain-findings
 ```
+
+---
+
+### Docker container logs
+
+No log aggregation stack (ELK, Loki, Graylog) required — if your services
+run in Docker, pipe their logs straight into LogSense:
+
+```bash
+# A single container
+docker logs my-service | logsense scan -
+
+# A whole Compose project, with error tracking
+docker compose logs --no-color | logsense scan - --track-errors
+
+# Follow a container in real time
+docker logs -f my-service | logsense scan -
+```
+
+Docker stores container logs as files on the host, so you can also point
+the file scanner at them directly (needs root):
+
+```bash
+logsense scan '/var/lib/docker/containers/*/*-json.log'
+```
+
+> A native Docker source adapter — auto-discovering containers, tagging each
+> event with its container name, and following them like `tail` — is planned.
+> The pipe above is the supported workflow until then.
 
 ---
 
