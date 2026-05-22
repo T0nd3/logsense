@@ -54,14 +54,16 @@ def create_app(config: Config) -> FastAPI:
     app.state.templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
     # ── HTML dashboard routes ──────────────────────────────────────────────
+    # Dashboard pages and HTMX partials are kept out of the OpenAPI schema, so
+    # /api/docs documents only the public REST API (/api/v1/*).
     from .routes import ui as ui_module
 
-    app.include_router(ui_module.router)
+    app.include_router(ui_module.router, include_in_schema=False)
 
     # ── HTMX / JSON dashboard API ──────────────────────────────────────────
     from .routes import api as api_module
 
-    app.include_router(api_module.router, prefix="/api")
+    app.include_router(api_module.router, prefix="/api", include_in_schema=False)
 
     # ── REST API v1 ────────────────────────────────────────────────────────
     from .routes.v1 import health_router

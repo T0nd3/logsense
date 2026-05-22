@@ -59,6 +59,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
   - [opensearch](#opensearch)
   - [loki](#loki)
   - [graylog](#graylog)
+  - [fleet](#fleet)
   - [export](#export)
   - [demo](#demo)
 - [Configuration](#configuration)
@@ -92,6 +93,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 | **Remote over SSH** | Pull logs from any SSH-reachable host — no agent on the remote box; scan or follow live with auto-reconnect |
 | **Grafana Loki** | Query a Loki instance with LogQL — scan or follow live |
 | **Graylog** | Query a Graylog server via its search API — scan or follow live |
+| **Fleet** | Declare many log sources in one file — scan, follow, and manage a whole fleet at once |
 | **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
 | **FP suppression** | Dismiss rules globally or per source file; reversible |
 | **Markdown export** | Automated security reports from the SQLite database |
@@ -626,6 +628,66 @@ Graylog messages keep their structured fields (source, level, timestamp).
 `graylog tail` polls the search API and skips already-seen messages by id.
 Authenticate with a Graylog access token (`GRAYLOG_TOKEN`) or with
 `GRAYLOG_USERNAME` / `GRAYLOG_PASSWORD`.
+
+---
+
+### fleet
+
+Most Logatory commands read one source. **Fleet** lets you declare many
+sources in a `targets.yaml` and scan, follow, or manage them all at once —
+each target can be any supported type (file, journald, docker, ssh,
+opensearch, loki, graylog).
+
+Build the file interactively — the wizard prompts for each target's fields
+and keeps secrets out of the file as `${ENV_VAR}` references:
+
+```bash
+logatory fleet init
+```
+
+…or write `targets.yaml` by hand:
+
+```yaml
+targets:
+  - name: web01
+    type: ssh
+    host: web01.example
+    journald: true
+    unit: nginx.service
+    groups: [web, prod]
+  - name: prod-loki
+    type: loki
+    url: http://loki:3100
+    query: '{namespace="prod"}'
+    token: ${LOKI_TOKEN}
+```
+
+Then work the whole fleet:
+
+```bash
+# List the configured targets; --check probes each for reachability
+logatory fleet list --check
+
+# Scan every target once, concurrently — redact PII, run rules
+logatory fleet scan
+
+# Only the 'web' group, findings only
+logatory fleet scan --group web --findings-only
+
+# Follow the whole fleet in real time (Ctrl+C to stop)
+logatory fleet tail --alert-webhook https://hooks.example/logs
+```
+
+Targets are fetched **concurrently**, and a target that fails is reported
+without aborting the run. `fleet tail` polls every target in its own thread,
+merges the events into one stream, prints findings plus a periodic heartbeat,
+and keeps going if a host drops out. Select subsets with `--target NAME` or
+`--group NAME` (both repeatable).
+
+In the **web dashboard**, the *Fleet* page lists the targets and offers an
+add-target form with per-type fields; the Findings and Errors pages gain a
+target/group filter populated from `targets.yaml`. When an API token is set
+the browser editor is read-only — manage the fleet with `fleet init` instead.
 
 ---
 
