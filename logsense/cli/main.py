@@ -8,16 +8,6 @@ from typing import Annotated, Optional
 
 import typer
 
-from cli import serve_cmd, tail_cmd
-from cli._types import REDACT_MAP, RedactModeArg
-from cli.anomaly_cmd import app as anomaly_app
-from cli.colors import SEVERITY_COLOR
-from cli.demo_cmd import app as demo_app
-from cli.errors_cmd import app as errors_app
-from cli.export_cmd import app as export_app
-from cli.findings_cmd import app as findings_app
-from cli.llm_cmd import app as llm_app
-from cli.opensearch_cmd import app as opensearch_app
 from logsense.adapters.file import FileAdapter
 from logsense.adapters.stdin import StdinAdapter
 from logsense.anomaly.baseline import compute_stats
@@ -28,6 +18,16 @@ from logsense.anomaly.detector import (
     detect_anomalies as run_anomaly_detection,
 )
 from logsense.anomaly.features import FeatureExtractor
+from logsense.cli import serve_cmd, tail_cmd
+from logsense.cli._types import REDACT_MAP, RedactModeArg
+from logsense.cli.anomaly_cmd import app as anomaly_app
+from logsense.cli.colors import SEVERITY_COLOR
+from logsense.cli.demo_cmd import app as demo_app
+from logsense.cli.errors_cmd import app as errors_app
+from logsense.cli.export_cmd import app as export_app
+from logsense.cli.findings_cmd import app as findings_app
+from logsense.cli.llm_cmd import app as llm_app
+from logsense.cli.opensearch_cmd import app as opensearch_app
 from logsense.config import Config
 from logsense.errors.tracker import ErrorTracker
 from logsense.models import Event, Finding
@@ -43,7 +43,7 @@ from logsense.storage.dismiss_repo import DismissRepository
 from logsense.storage.errors_repo import ErrorsRepository
 from logsense.storage.findings_repo import FindingsRepository, meets_min_severity
 
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
+_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(name="logsense", help="LogSense — local log analysis with LLM support.")
 app.command("tail")(tail_cmd.tail_watch)

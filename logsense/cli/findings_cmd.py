@@ -6,7 +6,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from cli.colors import SEVERITY_COLOR as _SEV_COLOR
+from logsense.cli.colors import SEVERITY_COLOR as _SEV_COLOR
 from logsense.config import Config
 from logsense.storage.dismiss_repo import DismissRepository
 from logsense.storage.findings_repo import FindingsRepository

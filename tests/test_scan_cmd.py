@@ -10,7 +10,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from cli.main import _format_event, _format_finding, app
+from logsense.cli.main import _format_event, _format_finding, app
 from logsense.models import Event, Finding, FindingSeverity, Severity
 
 runner = CliRunner()

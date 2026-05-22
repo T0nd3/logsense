@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from cli.errors_cmd import _parse_hours, app
+from logsense.cli.errors_cmd import _parse_hours, app
 from logsense.storage.errors_repo import ErrorsRepository
 
 runner = CliRunner()

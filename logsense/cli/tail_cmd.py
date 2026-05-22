@@ -15,9 +15,9 @@ from typing import Annotated, Optional
 
 import typer
 
-from cli._types import REDACT_MAP, RedactModeArg
-from cli.colors import SEVERITY_COLOR
 from logsense.adapters.tail import TailAdapter
+from logsense.cli._types import REDACT_MAP, RedactModeArg
+from logsense.cli.colors import SEVERITY_COLOR
 from logsense.config import Config
 from logsense.errors.tracker import ErrorTracker
 from logsense.models import Finding

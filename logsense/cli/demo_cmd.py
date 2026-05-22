@@ -14,7 +14,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from cli.colors import SEVERITY_COLOR
+from logsense.cli.colors import SEVERITY_COLOR
 
 app = typer.Typer(help="Guided demo of all major features using synthetic data.")
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from cli.findings_cmd import _parse_hours, app
+from logsense.cli.findings_cmd import _parse_hours, app
 from logsense.models import Finding, FindingSeverity
 from logsense.storage.findings_repo import FindingsRepository
 

@@ -58,10 +58,10 @@ dev = [
 ]
 
 [project.scripts]
-logsense = "cli.main:app"
+logsense = "logsense.cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["logsense", "cli"]
+packages = ["logsense"]
 artifacts = ["logsense/web/templates/**"]
 
 [tool.pytest.ini_options]
@@ -111,10 +111,10 @@ ignore = [
     "SIM117", # nested with — fine in test helpers
     "RUF005", # list + list concat — readable in test arg lists
 ]
-"cli/**" = [
+"logsense/cli/**" = [
     "B006",   # mutable default args — typer uses them
 ]
-"cli/demo_cmd.py" = [
+"logsense/cli/demo_cmd.py" = [
     "B007",   # unused loop vars in demo data unpacking — intentional
 ]
 "logsense/adapters/tail.py" = [

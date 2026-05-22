@@ -46,8 +46,8 @@ configuration lives in `pyproject.toml`.
 LogSense follows a **library-first** design:
 
 - `logsense/` is a pure Python library — all analysis logic lives here.
-- `cli/` (Typer) and `logsense/web/` (FastAPI) are thin wrappers that call the
-  library; they contain no analysis logic of their own.
+- `logsense/cli/` (Typer) and `logsense/web/` (FastAPI) are thin wrappers that
+  call the library; they contain no analysis logic of their own.
 - The **PII redactor runs directly after parsing** — no downstream component
   (rules, stats, LLM, storage) ever sees raw PII.
 - Storage goes through the repository pattern in `logsense/storage/`.
@@ -70,8 +70,7 @@ logsense/          Core library
   rules/               Rule engine, YAML loader, Sigma converter
   storage/             SQLite repositories (findings, errors, baseline, dismiss)
   web/                 FastAPI app, HTMX routes, Jinja2 templates
-
-cli/                   Typer CLI commands
+  cli/                 Typer CLI commands (scan, tail, serve, …)
 
 tests/                 pytest test suite
 plugins/               Example plugin (add your own here)
