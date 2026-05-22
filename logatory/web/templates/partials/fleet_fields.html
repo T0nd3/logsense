@@ -1,0 +1,15 @@
+{% for f in fields %}
+<div style="margin:8px 0;display:flex;align-items:center;gap:12px">
+  <label style="min-width:300px;font-size:13px;color:var(--text-muted)">{{ f.label }}</label>
+  {% if f.kind == "bool" %}
+  <input type="checkbox" name="{{ f.name }}">
+  {% elif f.kind == "secret" %}
+  <input type="text" name="{{ f.name }}" placeholder="environment variable name"
+         style="min-width:240px">
+  {% else %}
+  <input type="text" name="{{ f.name }}"{% if f.default %} value="{{ f.default }}"{% endif %}
+         placeholder="{{ f.label }}"{% if f.required %} required{% endif %}
+         style="min-width:240px">
+  {% endif %}
+</div>
+{% endfor %}

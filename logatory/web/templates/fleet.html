@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Fleet — Logatory{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Fleet</h1>
+
+{% if editable %}
+<div class="card">
+  <div class="card-title" style="margin-bottom:14px">Add a target</div>
+  <form hx-post="/api/fleet/targets" hx-target="#fleet-targets" hx-swap="outerHTML">
+    <div class="filter-bar">
+      <input type="text" name="name" placeholder="Target name" required style="min-width:200px">
+      <select name="type"
+              hx-get="/api/fleet/fields"
+              hx-target="#fleet-fields"
+              hx-trigger="change">
+        <option value="">Select type…</option>
+        {% for t in types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <div id="fleet-fields"></div>
+    <div class="filter-bar" style="margin-top:12px">
+      <input type="text" name="groups" placeholder="Groups — comma-separated (optional)"
+             style="min-width:260px">
+      <button type="submit" class="btn btn-primary">Add target</button>
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="card" style="color:var(--text-muted);font-size:13px">
+  Config editing is disabled because an API token is set. Build the fleet with
+  <code>logatory fleet init</code> or edit <code>targets.yaml</code> directly.
+</div>
+{% endif %}
+
+{% include "partials/fleet_targets.html" %}
+{% endblock %}

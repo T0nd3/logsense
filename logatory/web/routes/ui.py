@@ -6,10 +6,13 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from logatory.config import Config
+from logatory.fleet import TYPE_FIELDS
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository
 
-from ..deps import errors_repo, findings_repo, get_templates
+from ..deps import errors_repo, findings_repo, get_config, get_templates
+from ..fleet_config import read_targets
 from ..fleet_targets import fleet_options
 
 router = APIRouter()
@@ -83,5 +86,23 @@ def errors_page(
             "rows": rows,
             "total": len(rows),
             "targets": fleet_options(),
+        },
+    )
+
+
+@router.get("/fleet", response_class=HTMLResponse)
+def fleet_page(
+    request: Request,
+    templates: Jinja2Templates = Depends(get_templates),
+    cfg: Config = Depends(get_config),
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "fleet.html",
+        {
+            "active_page": "fleet",
+            "targets": read_targets(),
+            "types": sorted(TYPE_FIELDS),
+            "editable": not cfg.api_token,
         },
     )

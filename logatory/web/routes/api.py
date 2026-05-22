@@ -7,15 +7,17 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from logatory.config import Config
+from logatory.fleet import TYPE_FIELDS
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository
 
 from ..deps import errors_repo, findings_repo, get_config, get_templates
+from ..fleet_config import read_targets, write_targets
 from ..fleet_targets import resolve_filter
 
 router = APIRouter()
@@ -314,3 +316,92 @@ def api_explain(
         "partials/llm_explain.html",
         {"explanation": explanation, "error": error},
     )
+
+
+# ---------------------------------------------------------------------------
+# Fleet config editor
+# ---------------------------------------------------------------------------
+
+
+def _fleet_targets_partial(
+    request: Request,
+    templates: Jinja2Templates,
+    targets: list[dict],
+    error: str | None = None,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/fleet_targets.html",
+        {"targets": targets, "editable": True, "error": error},
+    )
+
+
+@router.get("/fleet/fields", response_class=HTMLResponse)
+def api_fleet_fields(
+    request: Request,
+    type: str = "",
+    templates: Jinja2Templates = Depends(get_templates),
+) -> HTMLResponse:
+    """Render the input fields for one target type (HTMX, on type change)."""
+    return templates.TemplateResponse(
+        request, "partials/fleet_fields.html", {"fields": TYPE_FIELDS.get(type, [])}
+    )
+
+
+@router.post("/fleet/targets", response_class=HTMLResponse)
+async def api_fleet_add(
+    request: Request,
+    templates: Jinja2Templates = Depends(get_templates),
+    cfg: Config = Depends(get_config),
+) -> HTMLResponse:
+    """Append a target to targets.yaml. Disabled when an API token is set."""
+    if cfg.api_token:
+        raise HTTPException(403, "Config editing is disabled while an API token is set.")
+
+    form = await request.form()
+    name = str(form.get("name") or "").strip()
+    ttype = str(form.get("type") or "").strip()
+    targets = read_targets()
+
+    if not name:
+        return _fleet_targets_partial(request, templates, targets, "A target name is required.")
+    if ttype not in TYPE_FIELDS:
+        return _fleet_targets_partial(request, templates, targets, "Choose a target type.")
+    if any(t.get("name") == name for t in targets):
+        return _fleet_targets_partial(
+            request, templates, targets, f"A target named '{name}' already exists."
+        )
+
+    entry: dict = {"name": name, "type": ttype}
+    groups = [g.strip() for g in str(form.get("groups") or "").split(",") if g.strip()]
+    if groups:
+        entry["groups"] = groups
+    for field in TYPE_FIELDS[ttype]:
+        if field.kind == "bool":
+            if form.get(field.name):
+                entry[field.name] = True
+        else:
+            value = str(form.get(field.name) or "").strip()
+            if value:
+                entry[field.name] = f"${{{value}}}" if field.kind == "secret" else value
+
+    targets.append(entry)
+    write_targets(targets)
+    return _fleet_targets_partial(request, templates, targets)
+
+
+@router.post("/fleet/delete", response_class=HTMLResponse)
+async def api_fleet_delete(
+    request: Request,
+    templates: Jinja2Templates = Depends(get_templates),
+    cfg: Config = Depends(get_config),
+) -> HTMLResponse:
+    """Remove a target from targets.yaml. Disabled when an API token is set."""
+    if cfg.api_token:
+        raise HTTPException(403, "Config editing is disabled while an API token is set.")
+
+    form = await request.form()
+    name = str(form.get("name") or "").strip()
+    targets = [t for t in read_targets() if t.get("name") != name]
+    write_targets(targets)
+    return _fleet_targets_partial(request, templates, targets)
