@@ -1,5 +1,9 @@
 # LogSense
 
+[![CI](https://github.com/T0nd3/logsense/actions/workflows/ci.yml/badge.svg)](https://github.com/T0nd3/logsense/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+
 **Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
 
 ---
@@ -908,55 +912,9 @@ Alternatively, upload a real log file via the browser at `http://localhost:8080/
 
 ## Contributing
 
-```bash
-# Clone and install in dev mode
-git clone https://github.com/T0nd3/logsense.git
-cd logsense
-pip install -e '.[web,opensearch,evtx,claude,embed,dev]'
+Contributions are welcome. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the
+development setup, the test and lint workflow, the project layout, and how to
+submit changes.
 
-# Run tests
-pytest
-
-# Lint and format
-ruff check .
-ruff format .
-```
-
-### Project layout
-
-```
-logsense/          Core library
-  adapters/            File, stdin, tail, OpenSearch event adapters
-  anomaly/             Statistical baseline and Z-score detector
-  errors/              Error fingerprinting and grouping
-  export/              Markdown report generator
-  llm/                 LLM client factory and prompt templates
-  parsers/             Syslog, Nginx, JSON Lines, EVTX, plaintext parsers
-  pii/                 PII patterns and redactor
-  plugins/             Plugin loader and registry
-  rules/               Rule engine, YAML loader, Sigma converter
-  storage/             SQLite repositories (findings, errors, baseline, dismiss)
-  web/                 FastAPI app, HTMX routes, Jinja2 templates
-
-cli/                   Typer CLI commands
-  main.py              Entry point, scan command
-  tail_cmd.py          tail command
-  serve_cmd.py         serve command
-  findings_cmd.py      findings subcommand group
-  errors_cmd.py        errors subcommand group
-  anomaly_cmd.py       anomaly subcommand group
-  llm_cmd.py           llm subcommand group
-  opensearch_cmd.py    opensearch subcommand group
-  export_cmd.py        export subcommand group
-  demo_cmd.py          interactive demo
-  colors.py            Shared severity colour map
-  _types.py            Shared CLI type definitions
-
-tests/                 pytest test suite
-
-plugins/               Example plugin (add your own here)
-config.yaml.example    Annotated configuration template
-pii_rules.yaml         Custom PII pattern definitions
-Dockerfile             Multi-stage production image
-docker-compose.yml     Compose stack with named volume
-```
+Security issues: please follow the **[Security Policy](SECURITY.md)** — do not
+open a public issue.
