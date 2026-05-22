@@ -1,12 +1,12 @@
 # Security Policy
 
-LogSense is a local-first log analysis tool. By default no log data leaves the
+Logatory is a local-first log analysis tool. By default no log data leaves the
 machine it runs on, and personally identifiable information is redacted
 directly after parsing.
 
 ## Supported versions
 
-LogSense is in early development (`0.1.x`, alpha). Security fixes are applied to
+Logatory is in early development (`0.1.x`, alpha). Security fixes are applied to
 the latest state of `master`.
 
 | Version | Supported |
@@ -20,12 +20,12 @@ the latest state of `master`.
 
 Instead, use GitHub's private vulnerability reporting:
 
-1. Open the [Security tab](https://github.com/T0nd3/logsense/security) of the
+1. Open the [Security tab](https://github.com/T0nd3/logatory/security) of the
    repository.
 2. Click **Report a vulnerability**.
 3. Include a description, steps to reproduce, and the affected version.
 
-You will get an acknowledgement as soon as possible (best effort — LogSense is
+You will get an acknowledgement as soon as possible (best effort — Logatory is
 currently maintained by a single developer). Please allow reasonable time for a
 fix before any public disclosure.
 

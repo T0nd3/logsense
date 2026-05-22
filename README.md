@@ -1,17 +1,17 @@
-# LogSense
+# Logatory
 
-[![CI](https://github.com/T0nd3/logsense/actions/workflows/ci.yml/badge.svg)](https://github.com/T0nd3/logsense/actions/workflows/ci.yml)
+[![CI](https://github.com/T0nd3/logatory/actions/workflows/ci.yml/badge.svg)](https://github.com/T0nd3/logatory/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
 **Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
 
-![LogSense web dashboard](docs/dashboard.png)
+![Logatory web dashboard](docs/dashboard.png)
 
 Or stay in the terminal — format auto-detected, PII redacted, threats flagged:
 
 ```text
-$ logsense scan tests/data/auth.log
+$ logatory scan tests/data/auth.log
 ------------------------------------------------------------
   Source   : tests/data/auth.log
   Format   : auth_log
@@ -98,14 +98,14 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 pip install .
 
 # Scan a log file
-logsense scan /var/log/syslog
+logatory scan /var/log/syslog
 
 # Watch a file in real time
-logsense tail /var/log/nginx/access.log
+logatory tail /var/log/nginx/access.log
 
 # Start the web dashboard
 pip install '.[web]'
-logsense serve
+logatory serve
 ```
 
 That's it. Open `http://localhost:8080` in your browser.
@@ -143,7 +143,7 @@ pip install '.[web,opensearch,evtx,claude,embed]'
 ### Shell auto-completion
 
 ```bash
-logsense --install-completion    # bash / zsh / fish / PowerShell
+logatory --install-completion    # bash / zsh / fish / PowerShell
 ```
 
 ---
@@ -159,7 +159,7 @@ All commands accept `--config/-c <path>` to specify a config file. Defaults to `
 Parse a log file (or stdin), redact PII, run detection rules, and optionally persist errors and findings.
 
 ```bash
-logsense scan [OPTIONS] [PATH]
+logatory scan [OPTIONS] [PATH]
 ```
 
 | Option | Default | Description |
@@ -183,20 +183,20 @@ logsense scan [OPTIONS] [PATH]
 
 ```bash
 # Basic scan with PII masking
-logsense scan /var/log/auth.log --redact mask
+logatory scan /var/log/auth.log --redact mask
 
 # Scan a gzip-compressed file and persist results
-logsense scan /var/log/nginx/access.log.gz --track-errors
+logatory scan /var/log/nginx/access.log.gz --track-errors
 
 # Read from stdin (e.g. pipe from journalctl)
-journalctl -n 1000 | logsense scan -
+journalctl -n 1000 | logatory scan -
 
 # Scan with anomaly detection after training the baseline
-logsense anomaly learn /var/log/syslog --source syslog
-logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+logatory anomaly learn /var/log/syslog --source syslog
+logatory scan /var/log/syslog --detect-anomalies --anomaly-source syslog
 
 # Explain the worst findings with Ollama
-logsense scan /var/log/auth.log --track-errors --explain-findings
+logatory scan /var/log/auth.log --track-errors --explain-findings
 ```
 
 ---
@@ -204,24 +204,24 @@ logsense scan /var/log/auth.log --track-errors --explain-findings
 ### Docker container logs
 
 No log aggregation stack (ELK, Loki, Graylog) required — if your services
-run in Docker, pipe their logs straight into LogSense:
+run in Docker, pipe their logs straight into Logatory:
 
 ```bash
 # A single container
-docker logs my-service | logsense scan -
+docker logs my-service | logatory scan -
 
 # A whole Compose project, with error tracking
-docker compose logs --no-color | logsense scan - --track-errors
+docker compose logs --no-color | logatory scan - --track-errors
 
 # Follow a container in real time
-docker logs -f my-service | logsense scan -
+docker logs -f my-service | logatory scan -
 ```
 
 Docker stores container logs as files on the host, so you can also point
 the file scanner at them directly (needs root):
 
 ```bash
-logsense scan '/var/lib/docker/containers/*/*-json.log'
+logatory scan '/var/lib/docker/containers/*/*-json.log'
 ```
 
 > A native Docker source adapter — auto-discovering containers, tagging each
@@ -235,7 +235,7 @@ logsense scan '/var/lib/docker/containers/*/*-json.log'
 Watch a log file for new lines in real time. Applies PII redaction and detection rules to every incoming event. Press **Ctrl+C** to stop.
 
 ```bash
-logsense tail [OPTIONS] PATH
+logatory tail [OPTIONS] PATH
 ```
 
 | Option | Default | Description |
@@ -257,23 +257,23 @@ Dismissed rules (see [`findings dismiss`](#findings)) are filtered out in real t
 
 ```bash
 # Watch nginx access log and send critical findings to a webhook
-logsense tail /var/log/nginx/access.log \
+logatory tail /var/log/nginx/access.log \
   --track-findings \
   --alert-webhook https://hooks.example.com/security \
   --alert-min-severity high
 
 # Read from the beginning and don't bother persisting
-logsense tail /var/log/auth.log --from-start --no-rules
+logatory tail /var/log/auth.log --from-start --no-rules
 ```
 
 ---
 
 ### serve
 
-Start the LogSense web dashboard (requires `pip install '.[web]'`).
+Start the Logatory web dashboard (requires `pip install '.[web]'`).
 
 ```bash
-logsense serve [OPTIONS]
+logatory serve [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -284,7 +284,7 @@ logsense serve [OPTIONS]
 | `--reload` | off | Auto-reload on source file changes (development mode). |
 
 ```bash
-logsense serve --port 9090
+logatory serve --port 9090
 ```
 
 Open `http://localhost:8080` to access the dashboard, or `http://localhost:8080/api/docs` for the interactive REST API documentation.
@@ -296,13 +296,13 @@ Open `http://localhost:8080` to access the dashboard, or `http://localhost:8080/
 Browse and manage HIGH/CRITICAL findings persisted by `scan --track-errors` or `tail --track-findings`.
 
 ```bash
-logsense findings [list|show|summary|dismiss|undismiss|dismissed]
+logatory findings [list|show|summary|dismiss|undismiss|dismissed]
 ```
 
 #### `findings list`
 
 ```bash
-logsense findings list [--severity high] [--source nginx.log] [--since 7d] [-n 100]
+logatory findings list [--severity high] [--source nginx.log] [--since 7d] [-n 100]
 ```
 
 `--since` accepts `s`, `m`, `h`, `d` suffixes: `30m`, `24h`, `7d`, `30d`.
@@ -312,8 +312,8 @@ logsense findings list [--severity high] [--source nginx.log] [--since 7d] [-n 1
 Show all stored occurrences for a specific rule:
 
 ```bash
-logsense findings show SSH_BRUTE_FORCE
-logsense findings show SSH_BRUTE_FORCE -n 50
+logatory findings show SSH_BRUTE_FORCE
+logatory findings show SSH_BRUTE_FORCE -n 50
 ```
 
 #### `findings summary`
@@ -321,7 +321,7 @@ logsense findings show SSH_BRUTE_FORCE -n 50
 Print counts by severity and the top 10 rules:
 
 ```bash
-logsense findings summary
+logatory findings summary
 ```
 
 #### `findings dismiss <RULE_ID>`
@@ -330,10 +330,10 @@ Suppress a rule so future scans and tail sessions skip it:
 
 ```bash
 # Global false-positive — suppress everywhere
-logsense findings dismiss SSH_BRUTE_FORCE --reason "internal bastion host"
+logatory findings dismiss SSH_BRUTE_FORCE --reason "internal bastion host"
 
 # Suppress only for one source file
-logsense findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
+logatory findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal scanner"
 ```
 
 #### `findings undismiss <RULE_ID>`
@@ -341,7 +341,7 @@ logsense findings dismiss NGINX_404_SCAN --source nginx.log --reason "internal s
 Re-enable a suppressed rule:
 
 ```bash
-logsense findings undismiss SSH_BRUTE_FORCE
+logatory findings undismiss SSH_BRUTE_FORCE
 ```
 
 #### `findings dismissed`
@@ -349,7 +349,7 @@ logsense findings undismiss SSH_BRUTE_FORCE
 List all currently active suppressions:
 
 ```bash
-logsense findings dismissed
+logatory findings dismissed
 ```
 
 ---
@@ -359,13 +359,13 @@ logsense findings dismissed
 Browse deduplicated error groups tracked by `scan --track-errors`.
 
 ```bash
-logsense errors [list|show|new|regression]
+logatory errors [list|show|new|regression]
 ```
 
 #### `errors list`
 
 ```bash
-logsense errors list [--sort last_seen|count|first_seen] [--severity error] [-n 50]
+logatory errors list [--sort last_seen|count|first_seen] [--severity error] [-n 50]
 ```
 
 #### `errors show <FINGERPRINT>`
@@ -373,7 +373,7 @@ logsense errors list [--sort last_seen|count|first_seen] [--severity error] [-n 
 Show details and the 20 most recent occurrences for an error fingerprint:
 
 ```bash
-logsense errors show abc123def456
+logatory errors show abc123def456
 ```
 
 #### `errors new`
@@ -381,7 +381,7 @@ logsense errors show abc123def456
 Show errors first seen within a time window — useful for catching regressions after a deploy:
 
 ```bash
-logsense errors new --since 1h
+logatory errors new --since 1h
 ```
 
 #### `errors regression`
@@ -389,7 +389,7 @@ logsense errors new --since 1h
 Show errors that reappeared after a silence period:
 
 ```bash
-logsense errors regression --silence 24h
+logatory errors regression --silence 24h
 ```
 
 ---
@@ -399,10 +399,10 @@ logsense errors regression --silence 24h
 Manage and validate detection rules.
 
 ```bash
-logsense rules list [--rules-dir ./my-rules]
+logatory rules list [--rules-dir ./my-rules]
 
-logsense rules validate my_rule.yml
-logsense rules validate sigma_rule.yml --sigma
+logatory rules validate my_rule.yml
+logatory rules validate sigma_rule.yml --sigma
 ```
 
 ---
@@ -412,7 +412,7 @@ logsense rules validate sigma_rule.yml --sigma
 Train and manage the statistical anomaly detection baseline.
 
 ```bash
-logsense anomaly [learn|status|reset]
+logatory anomaly [learn|status|reset]
 ```
 
 #### `anomaly learn`
@@ -420,8 +420,8 @@ logsense anomaly [learn|status|reset]
 Feed a log file into the baseline. Run this several times on representative logs. At least **5 time buckets** are needed before the baseline is considered trained.
 
 ```bash
-logsense anomaly learn /var/log/syslog --source syslog
-logsense anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
+logatory anomaly learn /var/log/syslog --source syslog
+logatory anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
 ```
 
 #### `anomaly status`
@@ -429,7 +429,7 @@ logsense anomaly learn /var/log/nginx/access.log --source nginx --bucket 300
 Show baseline training state for all known source keys:
 
 ```bash
-logsense anomaly status
+logatory anomaly status
 ```
 
 #### `anomaly reset`
@@ -437,14 +437,14 @@ logsense anomaly status
 Delete baseline data for one source key or all sources:
 
 ```bash
-logsense anomaly reset --source syslog
-logsense anomaly reset --all
+logatory anomaly reset --source syslog
+logatory anomaly reset --all
 ```
 
 Once the baseline is trained, enable detection during scan:
 
 ```bash
-logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anomaly-threshold 2.5
+logatory scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anomaly-threshold 2.5
 ```
 
 ---
@@ -454,7 +454,7 @@ logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog --anoma
 LLM-powered log analysis. Supports **Ollama** (default, local), **Claude** (Anthropic), and any **OpenAI-compatible** API.
 
 ```bash
-logsense llm [info|explain|summarize|ask|index]
+logatory llm [info|explain|summarize|ask|index]
 ```
 
 #### `llm info`
@@ -462,7 +462,7 @@ logsense llm [info|explain|summarize|ask|index]
 Check provider connectivity and list available models:
 
 ```bash
-logsense llm info
+logatory llm info
 ```
 
 #### `llm explain <FINGERPRINT>`
@@ -470,7 +470,7 @@ logsense llm info
 Explain a tracked error in plain language:
 
 ```bash
-logsense llm explain abc123def456
+logatory llm explain abc123def456
 ```
 
 #### `llm summarize`
@@ -478,7 +478,7 @@ logsense llm explain abc123def456
 Generate a natural-language summary of recent errors:
 
 ```bash
-logsense llm summarize --since 24h
+logatory llm summarize --since 24h
 ```
 
 #### `llm ask <QUESTION>`
@@ -487,11 +487,11 @@ Ask questions about your findings and errors using RAG over the local SQLite dat
 
 ```bash
 # Build the vector index first (requires pip install '.[embed]')
-logsense llm index
+logatory llm index
 
 # Then ask freely
-logsense llm ask "What are the most critical security issues from the past week?"
-logsense llm ask "Which source files had the most brute-force attempts?"
+logatory llm ask "What are the most critical security issues from the past week?"
+logatory llm ask "Which source files had the most brute-force attempts?"
 ```
 
 > **Privacy note:** LLM queries use *redacted* log data. When using a cloud provider (Claude, OpenAI), a warning is shown before any data is sent.
@@ -503,18 +503,18 @@ logsense llm ask "Which source files had the most brute-force attempts?"
 Query and analyse logs from an OpenSearch or Elasticsearch cluster.
 
 ```bash
-logsense opensearch scan [OPTIONS]
-logsense opensearch info
+logatory opensearch scan [OPTIONS]
+logatory opensearch info
 ```
 
 Configure the connection in `config.yaml` under the `opensearch:` key (see [Configuration](#configuration)). Credentials can be set via environment variables to avoid storing them in the config file.
 
 ```bash
 # Check cluster connectivity
-logsense opensearch info
+logatory opensearch info
 
 # Run detection rules on the last 2 hours of logs
-logsense opensearch scan --index "logstash-*" --since 2h --track-errors
+logatory opensearch scan --index "logstash-*" --since 2h --track-errors
 ```
 
 ---
@@ -524,7 +524,7 @@ logsense opensearch scan --index "logstash-*" --since 2h --track-errors
 Generate reports from the SQLite database.
 
 ```bash
-logsense export report [OPTIONS]
+logatory export report [OPTIONS]
 ```
 
 | Option | Default | Description |
@@ -532,15 +532,15 @@ logsense export report [OPTIONS]
 | `--output/-o` | `report.md` | Output file path. |
 | `--since` | `168h` (7 days) | Look-back window: `24h`, `7d`, `30d`, etc. |
 | `--severity` | all | Minimum severity filter. |
-| `--title` | `LogSense Security Report` | Report title. |
+| `--title` | `Logatory Security Report` | Report title. |
 | `--open` | off | Open the report in the system default app after writing. |
 
 ```bash
 # Weekly security report
-logsense export report --since 7d --output weekly.md --open
+logatory export report --since 7d --output weekly.md --open
 
 # Critical-only daily report
-logsense export report --since 24h --severity critical --title "Daily Critical Alerts"
+logatory export report --since 24h --severity critical --title "Daily Critical Alerts"
 ```
 
 ---
@@ -550,7 +550,7 @@ logsense export report --since 24h --severity critical --title "Daily Critical A
 Interactive demo and database seeding using synthetic data — no real log files, Ollama, or database required for `demo run`.
 
 ```bash
-logsense demo [run|seed|clear]
+logatory demo [run|seed|clear]
 ```
 
 #### `demo run`
@@ -558,8 +558,8 @@ logsense demo [run|seed|clear]
 Guided CLI walkthrough of all 7 feature sections (log parsing, PII, rules, error tracking, findings, anomaly detection, LLM):
 
 ```bash
-logsense demo run           # pause after each section
-logsense demo run --no-pause  # print everything at once
+logatory demo run           # pause after each section
+logatory demo run --no-pause  # print everything at once
 ```
 
 #### `demo seed`
@@ -567,7 +567,7 @@ logsense demo run --no-pause  # print everything at once
 Populate the SQLite database with synthetic findings and errors so the **web dashboard** has something to display immediately. Inserts 25 findings spread over 14 days (for the trend chart) and 5 error groups. All records are tagged internally and never mixed with real data.
 
 ```bash
-logsense demo seed
+logatory demo seed
 ```
 
 #### `demo clear`
@@ -575,7 +575,7 @@ logsense demo seed
 Remove every record written by `demo seed`. Real findings and errors are never touched.
 
 ```bash
-logsense demo clear
+logatory demo clear
 ```
 
 ---
@@ -586,17 +586,17 @@ Copy `config.yaml.example` to `config.yaml` and adapt:
 
 ```yaml
 # SQLite database for findings, errors, and baselines
-db_path: logsense.db        # use /data/logsense.db inside Docker
+db_path: logatory.db        # use /data/logatory.db inside Docker
 
 # Custom PII patterns file (optional)
 pii_rules_path: pii_rules.yaml
 
 # Salt for deterministic PII pseudonymisation
-# Prefer env var LOGSENSE_PII_SALT over storing here
+# Prefer env var LOGATORY_PII_SALT over storing here
 pii_salt: ""
 
 # REST API Bearer token — leave empty to disable auth (local dev)
-# Prefer env var LOGSENSE_API_TOKEN
+# Prefer env var LOGATORY_API_TOKEN
 api_token: ""
 
 # Plugin directory — all *.py files here are auto-loaded at startup
@@ -634,15 +634,15 @@ opensearch:
 
 | Variable | Description |
 |---|---|
-| `LOGSENSE_PII_SALT` | Salt for PII pseudonymisation |
-| `LOGSENSE_API_TOKEN` | Bearer token for REST API auth |
+| `LOGATORY_PII_SALT` | Salt for PII pseudonymisation |
+| `LOGATORY_API_TOKEN` | Bearer token for REST API auth |
 | `OPENSEARCH_USERNAME` | OpenSearch basic auth username |
 | `OPENSEARCH_PASSWORD` | OpenSearch basic auth password |
 | `OPENSEARCH_API_KEY` | OpenSearch API key (`id:base64key`) |
 | `OPENSEARCH_CLIENT_CERT` | Path to client certificate |
 | `OPENSEARCH_CLIENT_KEY` | Path to client private key |
 | `OPENSEARCH_CA_CERTS` | Path to CA certificate bundle |
-| `LOGSENSE_CONFIG` | Config file path used by `logsense serve --reload` |
+| `LOGATORY_CONFIG` | Config file path used by `logatory serve --reload` |
 
 ---
 
@@ -679,7 +679,7 @@ Or register patterns via the [Plugin System](#plugin-system).
 
 ## Detection Rules
 
-Rules live in `logsense/rules/builtin/` (shipped) or any YAML file you point to with `--rules-dir`.
+Rules live in `logatory/rules/builtin/` (shipped) or any YAML file you point to with `--rules-dir`.
 
 ### Built-in rules
 
@@ -716,7 +716,7 @@ detection:
 Validate a rule before using it:
 
 ```bash
-logsense rules validate my_rule.yml
+logatory rules validate my_rule.yml
 ```
 
 ### Sigma rules
@@ -724,7 +724,7 @@ logsense rules validate my_rule.yml
 Import a Sigma rule and convert it to the native format:
 
 ```bash
-logsense rules validate sigma_rule.yml --sigma
+logatory rules validate sigma_rule.yml --sigma
 ```
 
 ---
@@ -768,26 +768,26 @@ def register(registry) -> None:
     registry.add_rule_dir(Path(__file__).parent / "my_rules")
 ```
 
-Plugin rules participate in both `logsense scan`, `logsense tail`, and the web dashboard rule engine. Plugin PII patterns apply to every redaction pass. A plugin that raises an exception is logged as a warning and skipped — it never crashes the host process.
+Plugin rules participate in both `logatory scan`, `logatory tail`, and the web dashboard rule engine. Plugin PII patterns apply to every redaction pass. A plugin that raises an exception is logged as a warning and skipped — it never crashes the host process.
 
 ---
 
 ## Anomaly Detection
 
-LogSense uses a statistical Z-score baseline to detect unusual log activity without writing any rules. Features tracked per 60-second bucket: total event count, error rate, warning rate.
+Logatory uses a statistical Z-score baseline to detect unusual log activity without writing any rules. Features tracked per 60-second bucket: total event count, error rate, warning rate.
 
 **Training workflow:**
 
 ```bash
 # Step 1: Feed representative logs (repeat for several days of data)
-logsense anomaly learn /var/log/syslog --source syslog
+logatory anomaly learn /var/log/syslog --source syslog
 
 # Step 2: Check training state
-logsense anomaly status
+logatory anomaly status
 # shows: syslog → 42 observations  trained ✓
 
 # Step 3: Enable detection in scan or tail
-logsense scan /var/log/syslog --detect-anomalies --anomaly-source syslog
+logatory scan /var/log/syslog --detect-anomalies --anomaly-source syslog
 ```
 
 At least **5 time buckets** are required before the baseline is used. The baseline grows automatically every time you scan with `--detect-anomalies` — no separate training step is needed once you're in production.
@@ -796,10 +796,10 @@ Adjust sensitivity with `--anomaly-threshold` (default: `3.0` standard deviation
 
 ```bash
 # More sensitive
-logsense scan /var/log/syslog --detect-anomalies --anomaly-threshold 2.0
+logatory scan /var/log/syslog --detect-anomalies --anomaly-threshold 2.0
 
 # Less sensitive
-logsense scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
+logatory scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
 ```
 
 ---
@@ -813,7 +813,7 @@ logsense scan /var/log/syslog --detect-anomalies --anomaly-threshold 4.0
 ollama pull gemma3:4b
 
 # Default config already points to http://localhost:11434
-logsense llm info
+logatory llm info
 ```
 
 ### Claude (Anthropic)
@@ -827,7 +827,7 @@ llm:
 
 ```bash
 export LLM_API_KEY=sk-ant-...
-logsense llm info
+logatory llm info
 ```
 
 ### OpenAI-compatible APIs
@@ -843,7 +843,7 @@ llm:
 export LLM_API_KEY=sk-...
 ```
 
-> When using a cloud provider, LogSense prints a warning before sending any redacted data to the external API.
+> When using a cloud provider, Logatory prints a warning before sending any redacted data to the external API.
 
 ---
 
@@ -852,7 +852,7 @@ export LLM_API_KEY=sk-...
 Start the server (requires `pip install '.[web]'`):
 
 ```bash
-logsense serve --port 8080
+logatory serve --port 8080
 ```
 
 ### Dashboard pages
@@ -871,7 +871,7 @@ Navigate to `/upload` in the browser to scan any log file without leaving the da
 - **Drag-and-drop** or click to browse — `.log`, `.txt`, `.gz`, `.json`
 - Choose PII mode: **Redact** (pseudonymize), **Mask** (`<TYPE>`), or **Dry-run**
 - Results appear inline (no page reload): stat cards, findings table sorted by severity, 20-event sample
-- **Nothing is persisted** — purely transient analysis; use `logsense scan --track-errors` to save results
+- **Nothing is persisted** — purely transient analysis; use `logatory scan --track-errors` to save results
 - Maximum upload size: **10 MB**
 
 ### REST API v1
@@ -891,7 +891,7 @@ Interactive docs: `/api/docs`
 
 **Authentication**
 
-Set `api_token` in `config.yaml` or via `LOGSENSE_API_TOKEN`. Pass it as:
+Set `api_token` in `config.yaml` or via `LOGATORY_API_TOKEN`. Pass it as:
 
 ```
 Authorization: Bearer <token>
@@ -918,30 +918,30 @@ curl -X POST http://localhost:8080/api/v1/events \
 docker compose up -d
 ```
 
-The stack starts LogSense on port `8080` with a named volume for the SQLite database.
+The stack starts Logatory on port `8080` with a named volume for the SQLite database.
 
 ### Environment variables for Docker
 
 ```bash
 # docker-compose.yml (or .env file)
-LOGSENSE_API_TOKEN=change-me-in-production
-LOGSENSE_PII_SALT=a-long-random-string
+LOGATORY_API_TOKEN=change-me-in-production
+LOGATORY_PII_SALT=a-long-random-string
 ```
 
 ### Build and run manually
 
 ```bash
-docker build -t logsense .
+docker build -t logatory .
 
 docker run -d \
   -p 8080:8080 \
-  -v logsense-data:/data \
-  -e LOGSENSE_API_TOKEN=mytoken \
-  -e LOGSENSE_PII_SALT=mysalt \
-  logsense
+  -v logatory-data:/data \
+  -e LOGATORY_API_TOKEN=mytoken \
+  -e LOGATORY_PII_SALT=mysalt \
+  logatory
 ```
 
-The container runs as a non-root user (`logsense`, UID 1001). The database and config are stored in `/data`.
+The container runs as a non-root user (`logatory`, UID 1001). The database and config are stored in `/data`.
 
 ### Scanning log files inside Docker
 
@@ -950,9 +950,9 @@ Mount the host log directory and run a one-shot scan:
 ```bash
 docker run --rm \
   -v /var/log:/logs:ro \
-  -v logsense-data:/data \
-  logsense \
-  logsense scan /logs/syslog --track-errors
+  -v logatory-data:/data \
+  logatory \
+  logatory scan /logs/syslog --track-errors
 ```
 
 ### Demo data for the web dashboard
@@ -961,10 +961,10 @@ Seed the database with synthetic findings and errors so the dashboard shows data
 
 ```bash
 # Populate (25 findings over 14 days + 5 error groups)
-docker compose exec logsense logsense demo seed
+docker compose exec logatory logatory demo seed
 
 # Remove all demo data (real data is untouched)
-docker compose exec logsense logsense demo clear
+docker compose exec logatory logatory demo clear
 ```
 
 Alternatively, upload a real log file via the browser at `http://localhost:8080/upload` for an instant, transient scan.

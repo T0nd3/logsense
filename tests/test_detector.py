@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from logsense.parsers.detector import FormatDetector, LogFormat
+from logatory.parsers.detector import FormatDetector, LogFormat
 
 DATA_DIR = Path(__file__).parent / "data"
 

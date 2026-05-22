@@ -1,0 +1,29 @@
+<table>
+  <thead>
+    <tr>
+      <th>Rule ID</th>
+      <th class="th-sort{% if sort == 'severity' %} th-sort-active{% endif %}"
+          title="Sort by severity"
+          hx-get="/api/top-rules?sort=severity" hx-target="#top-rules">
+        Severity{% if sort == 'severity' %} <span class="sort-caret">&#9662;</span>{% endif %}
+      </th>
+      <th class="th-sort{% if sort == 'count' %} th-sort-active{% endif %}"
+          style="text-align:right"
+          title="Sort by count"
+          hx-get="/api/top-rules?sort=count" hx-target="#top-rules">
+        Count{% if sort == 'count' %} <span class="sort-caret">&#9662;</span>{% endif %}
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in top_rules %}
+    <tr>
+      <td class="mono">{{ r.rule_id }}</td>
+      <td><span class="badge badge-{{ r.severity }}">{{ r.severity }}</span></td>
+      <td style="text-align:right;font-weight:600">{{ r.count }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3" class="td-empty">No findings yet — run <code>logatory scan --track-errors</code></td></tr>
+    {% endfor %}
+  </tbody>
+</table>

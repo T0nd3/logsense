@@ -10,7 +10,7 @@ assignees: ''
 What problem would this solve? What are you trying to do?
 
 **Proposed solution**
-What you'd like LogSense to do.
+What you'd like Logatory to do.
 
 **Alternatives considered**
 Any workarounds or alternative approaches you've thought about.

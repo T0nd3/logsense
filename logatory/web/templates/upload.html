@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Upload — Logatory{% endblock %}
+{% block content %}
+<h1 class="page-title">Upload &amp; Scan</h1>
+
+<div class="card" style="max-width: 760px;">
+  <div class="card-title" style="margin-bottom:6px;">Instant log analysis</div>
+  <p style="color:var(--text-muted); font-size:13px; margin-bottom:22px;">
+    Upload any log file — syslog, nginx, JSON Lines, or plaintext. PII is redacted
+    before processing. Results are shown immediately and <strong>not persisted</strong>
+    to the database. Max&nbsp;10&nbsp;MB.
+  </p>
+
+  <form id="upload-form"
+        hx-post="/api/upload"
+        hx-target="#upload-results"
+        hx-swap="innerHTML"
+        hx-encoding="multipart/form-data">
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="drop-zone-icon">&#128196;</div>
+      <div class="drop-zone-label" id="drop-label">Drop a log file here or click to browse</div>
+      <div class="drop-zone-sub">.log &nbsp;·&nbsp; .txt &nbsp;·&nbsp; .gz &nbsp;·&nbsp; .json</div>
+      <input type="file" id="file-input" name="file" required
+             accept=".log,.txt,.gz,.json,.evtx"
+             style="display:none">
+    </div>
+
+    <!-- Options -->
+    <div class="filter-bar" style="margin-top:16px; align-items:center;">
+      <label style="color:var(--text-muted); font-size:13px;">PII:</label>
+      <select name="redact" title="How to handle detected PII">
+        <option value="redact">Redact (pseudonymize with hash)</option>
+        <option value="mask">Mask (&lt;TYPE&gt;)</option>
+        <option value="dry-run">Dry-run (report only, no changes)</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary" style="margin-left:auto;">
+        &#128269;&nbsp;Scan
+        <span class="htmx-indicator spinner" id="scan-spinner" style="margin-left:6px;"></span>
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Results injected here by HTMX -->
+<div id="upload-results"></div>
+
+<script>
+(function () {
+  const zone   = document.getElementById('drop-zone');
+  const input  = document.getElementById('file-input');
+  const label  = document.getElementById('drop-label');
+
+  // File chosen via dialog
+  input.addEventListener('change', () => {
+    if (input.files.length) {
+      label.textContent = input.files[0].name;
+      zone.classList.add('has-file');
+    }
+  });
+
+  // Drag-and-drop
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    // Attach file to the hidden input via DataTransfer
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    label.textContent = file.name;
+    zone.classList.add('has-file');
+  });
+
+  // Show spinner when form submits, re-enable after HTMX swaps
+  const form    = document.getElementById('upload-form');
+  const spinner = document.getElementById('scan-spinner');
+  form.addEventListener('htmx:beforeRequest', () => {
+    spinner.classList.add('htmx-request');
+  });
+  form.addEventListener('htmx:afterSwap', () => {
+    spinner.classList.remove('htmx-request');
+  });
+})();
+</script>
+{% endblock %}

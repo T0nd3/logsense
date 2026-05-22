@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from logsense.cli.errors_cmd import _parse_hours, app
-from logsense.storage.errors_repo import ErrorsRepository
+from logatory.cli.errors_cmd import _parse_hours, app
+from logatory.storage.errors_repo import ErrorsRepository
 
 runner = CliRunner()
 
@@ -24,7 +24,7 @@ def _ts(offset_hours: int = 0) -> datetime:
 
 
 def _cfg_args(db_path: Path) -> list[str]:
-    cfg_file = db_path.parent / "logsense.yaml"
+    cfg_file = db_path.parent / "logatory.yaml"
     cfg_file.write_text(f"db_path: {db_path}\n")
     return ["--config", str(cfg_file)]
 

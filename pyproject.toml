@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "logsense"
+name = "logatory"
 version = "0.1.0"
 description = "Local log analysis with PII redaction, threat detection, anomaly detection and LLM-powered insights"
 readme = "README.md"
@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/T0nd3/logsense"
-Repository = "https://github.com/T0nd3/logsense"
-Issues = "https://github.com/T0nd3/logsense/issues"
+Homepage = "https://github.com/T0nd3/logatory"
+Repository = "https://github.com/T0nd3/logatory"
+Issues = "https://github.com/T0nd3/logatory/issues"
 
 [project.optional-dependencies]
 evtx = ["python-evtx>=0.7"]
@@ -58,11 +58,11 @@ dev = [
 ]
 
 [project.scripts]
-logsense = "logsense.cli.main:app"
+logatory = "logatory.cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["logsense"]
-artifacts = ["logsense/web/templates/**"]
+packages = ["logatory"]
+artifacts = ["logatory/web/templates/**"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -111,13 +111,13 @@ ignore = [
     "SIM117", # nested with — fine in test helpers
     "RUF005", # list + list concat — readable in test arg lists
 ]
-"logsense/cli/**" = [
+"logatory/cli/**" = [
     "B006",   # mutable default args — typer uses them
 ]
-"logsense/cli/demo_cmd.py" = [
+"logatory/cli/demo_cmd.py" = [
     "B007",   # unused loop vars in demo data unpacking — intentional
 ]
-"logsense/adapters/tail.py" = [
+"logatory/adapters/tail.py" = [
     "SIM115", # open() without context manager — intentional (handle kept across yields)
 ]
 

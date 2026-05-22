@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from logsense.adapters.tail import TailAdapter
-from logsense.models import Finding, FindingSeverity
-from logsense.tail_helpers import meets_alert_severity, post_webhook
+from logatory.adapters.tail import TailAdapter
+from logatory.models import Finding, FindingSeverity
+from logatory.tail_helpers import meets_alert_severity, post_webhook
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -237,7 +237,7 @@ class TestTailAdapterFormatDetection:
         assert fmt is not None
 
     def test_detects_json(self, tmp_path: Path):
-        from logsense.parsers.detector import LogFormat
+        from logatory.parsers.detector import LogFormat
 
         log = tmp_path / "app.log"
         _write(log, json.dumps({"level": "INFO", "msg": "hi"}) + "\n")

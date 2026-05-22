@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from logsense.cli.findings_cmd import _parse_hours, app
-from logsense.models import Finding, FindingSeverity
-from logsense.storage.findings_repo import FindingsRepository
+from logatory.cli.findings_cmd import _parse_hours, app
+from logatory.models import Finding, FindingSeverity
+from logatory.storage.findings_repo import FindingsRepository
 
 runner = CliRunner()
 
@@ -73,7 +73,7 @@ def empty_db(tmp_path: Path) -> Path:
 
 def _cfg_args(db_path: Path) -> list[str]:
     """Return --config args pointing to a temp config that uses db_path."""
-    cfg_file = db_path.parent / "logsense.yaml"
+    cfg_file = db_path.parent / "logatory.yaml"
     cfg_file.write_text(f"db_path: {db_path}\n")
     return ["--config", str(cfg_file)]
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Findings — Logatory{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Findings</h1>
+
+<!-- ── filter bar ─────────────────────────────────────────────────────── -->
+<form class="filter-bar"
+      id="findings-form"
+      hx-get="/api/findings"
+      hx-trigger="change from:select, keyup changed delay:400ms from:input[type='text']"
+      hx-target="#findings-body"
+      hx-indicator="#findings-loading">
+
+  <select name="severity">
+    <option value="">All severities</option>
+    <option value="critical">Critical</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+
+  <input type="text" name="source" placeholder="Filter by source file…" style="min-width:220px">
+
+  <select name="since_hours">
+    <option value="">All time</option>
+    <option value="1">Last 1 h</option>
+    <option value="24">Last 24 h</option>
+    <option value="168">Last 7 days</option>
+    <option value="720">Last 30 days</option>
+  </select>
+
+  <span id="findings-loading" class="htmx-indicator" style="margin-left:6px">
+    <span class="spinner"></span>
+  </span>
+</form>
+
+<!-- ── findings table ─────────────────────────────────────────────────── -->
+<div class="table-card">
+  <div class="table-header">
+    <span class="table-title">Findings</span>
+    <span style="color:var(--text-muted);font-size:12px">{{ total }} loaded</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="nowrap">Time (UTC)</th>
+        <th>Rule</th>
+        <th>Severity</th>
+        <th>Source</th>
+        <th>Message</th>
+        <th style="width:90px">LLM</th>
+      </tr>
+    </thead>
+    <tbody id="findings-body">
+      {% include "partials/findings_rows.html" %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

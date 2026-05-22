@@ -3,19 +3,19 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from logsense.models import Event, FindingSeverity, Severity
-from logsense.rules.engine import (
+from logatory.models import Event, FindingSeverity, Severity
+from logatory.rules.engine import (
     RuleEngine,
     _eval_count,
     _extract_group_key,
     _get_field,
     _ts_utc,
 )
-from logsense.rules.loader import load_rules_dir, validate_rule_file
-from logsense.rules.model import Rule
-from logsense.rules.sigma import load_sigma_file
+from logatory.rules.loader import load_rules_dir, validate_rule_file
+from logatory.rules.model import Rule
+from logatory.rules.sigma import load_sigma_file
 
-_BUILTIN = Path(__file__).parent.parent / "logsense" / "rules" / "builtin"
+_BUILTIN = Path(__file__).parent.parent / "logatory" / "rules" / "builtin"
 _DATA = Path(__file__).parent / "data"
 
 
@@ -36,7 +36,7 @@ def _event(message: str, ts: datetime | None = None, **parsed) -> Event:
 
 
 def _make_rule(match: list[dict], agg: dict | None = None, level: str = "high") -> Rule:
-    from logsense.rules.loader import _load_one
+    from logatory.rules.loader import _load_one
 
     data = {
         "id": "test_rule",
@@ -446,7 +446,7 @@ class TestEvalCount:
 
 class TestExtractGroupKey:
     def _agg(self, group_by=None, group_by_regex=None):
-        from logsense.rules.model import AggregateCondition
+        from logatory.rules.model import AggregateCondition
 
         return AggregateCondition(
             count_op=">=",

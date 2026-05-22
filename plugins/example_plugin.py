@@ -1,4 +1,4 @@
-"""Example LogSense plugin — demonstrates how to add custom rules and PII patterns.
+"""Example Logatory plugin — demonstrates how to add custom rules and PII patterns.
 
 Enable this plugin by setting in config.yaml:
     plugins_dir: plugins/

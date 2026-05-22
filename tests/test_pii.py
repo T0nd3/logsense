@@ -1,6 +1,6 @@
 import pytest
 
-from logsense.pii.redactor import PIIRedactor, RedactMode
+from logatory.pii.redactor import PIIRedactor, RedactMode
 
 
 @pytest.fixture

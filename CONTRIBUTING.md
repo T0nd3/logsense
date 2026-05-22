@@ -1,16 +1,16 @@
-# Contributing to LogSense
+# Contributing to Logatory
 
-Thanks for your interest in improving LogSense! This document covers how to set
+Thanks for your interest in improving Logatory! This document covers how to set
 up a development environment, run the checks, and submit changes.
 
 ## Development setup
 
-LogSense targets **Python 3.11+**.
+Logatory targets **Python 3.11+**.
 
 ```bash
 # Clone
-git clone https://github.com/T0nd3/logsense.git
-cd logsense
+git clone https://github.com/T0nd3/logatory.git
+cd logatory
 
 # Install in editable mode with all optional features + dev tools
 pip install -e '.[web,opensearch,evtx,claude,embed,dev]'
@@ -38,19 +38,19 @@ configuration lives in `pyproject.toml`.
 
 - Line length 99, double quotes — enforced by `ruff format`.
 - Type hints throughout; modules use `from __future__ import annotations`.
-- Keep the core library (`logsense/`) free of CLI/HTTP concerns — see
+- Keep the core library (`logatory/`) free of CLI/HTTP concerns — see
   Architecture below.
 
 ## Architecture
 
-LogSense follows a **library-first** design:
+Logatory follows a **library-first** design:
 
-- `logsense/` is a pure Python library — all analysis logic lives here.
-- `logsense/cli/` (Typer) and `logsense/web/` (FastAPI) are thin wrappers that
+- `logatory/` is a pure Python library — all analysis logic lives here.
+- `logatory/cli/` (Typer) and `logatory/web/` (FastAPI) are thin wrappers that
   call the library; they contain no analysis logic of their own.
 - The **PII redactor runs directly after parsing** — no downstream component
   (rules, stats, LLM, storage) ever sees raw PII.
-- Storage goes through the repository pattern in `logsense/storage/`.
+- Storage goes through the repository pattern in `logatory/storage/`.
 
 New analysis features belong in the library; the CLI and web layers only
 expose them.
@@ -58,7 +58,7 @@ expose them.
 ## Project layout
 
 ```
-logsense/          Core library
+logatory/          Core library
   adapters/            File, stdin, tail, OpenSearch event adapters
   anomaly/             Statistical baseline and Z-score detector
   errors/              Error fingerprinting and grouping

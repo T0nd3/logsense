@@ -1,21 +1,21 @@
 services:
-  logsense:
+  logatory:
     build: .
-    image: logsense:latest
-    container_name: logsense
+    image: logatory:latest
+    container_name: logatory
     restart: unless-stopped
     ports:
-      - "${LOGSENSE_PORT:-8080}:8080"
+      - "${LOGATORY_PORT:-8080}:8080"
     volumes:
       # Persistent SQLite database
-      - logsense-data:/data
+      - logatory-data:/data
       # Optional: mount your config.yaml (copy config.yaml.example first)
       # - ./config.yaml:/app/config.yaml:ro
     environment:
       # Bearer token for REST API (leave empty to disable auth)
-      - LOGSENSE_API_TOKEN=${LOGSENSE_API_TOKEN:-}
+      - LOGATORY_API_TOKEN=${LOGATORY_API_TOKEN:-}
       # PII salt for pseudonymization (set a random secret)
-      - LOGSENSE_PII_SALT=${LOGSENSE_PII_SALT:-}
+      - LOGATORY_PII_SALT=${LOGATORY_PII_SALT:-}
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/health')"]
@@ -25,5 +25,5 @@ services:
       start_period: 10s
 
 volumes:
-  logsense-data:
+  logatory-data:
     driver: local

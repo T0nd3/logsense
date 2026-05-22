@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from logsense.adapters.file import FileAdapter
-from logsense.models import Severity
+from logatory.adapters.file import FileAdapter
+from logatory.models import Severity
 
 DATA_DIR = Path(__file__).parent / "data"
 

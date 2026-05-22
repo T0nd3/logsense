@@ -5,16 +5,16 @@ from pathlib import Path
 
 import pytest
 
-from logsense.errors.detector import (
+from logatory.errors.detector import (
     classify_stack_language,
     detect_stack_trace,
     is_error_event,
 )
-from logsense.errors.fingerprint import extract_error_type, fingerprint
-from logsense.errors.normalizer import normalize
-from logsense.errors.tracker import ErrorTracker
-from logsense.models import Event, Severity
-from logsense.storage.errors_repo import ErrorsRepository
+from logatory.errors.fingerprint import extract_error_type, fingerprint
+from logatory.errors.normalizer import normalize
+from logatory.errors.tracker import ErrorTracker
+from logatory.models import Event, Severity
+from logatory.storage.errors_repo import ErrorsRepository
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -334,7 +334,7 @@ class TestErrorsRepository:
         fps = []
         for i in range(n):
             msg = f"Error{i}: something failed with id {i}"
-            from logsense.errors.fingerprint import fingerprint as fp_fn
+            from logatory.errors.fingerprint import fingerprint as fp_fn
 
             fp = fp_fn(msg)
             fps.append(fp)
@@ -368,7 +368,7 @@ class TestErrorsRepository:
         assert rows[0]["fingerprint"] == fps[0]
 
     def test_list_errors_filter_severity(self, repo: ErrorsRepository):
-        from logsense.errors.fingerprint import fingerprint as fp_fn
+        from logatory.errors.fingerprint import fingerprint as fp_fn
 
         msg = "CriticalError: meltdown"
         repo.upsert(

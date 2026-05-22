@@ -1,11 +1,11 @@
-# Log-Analyzer / LogSense config example — copy to config.yaml and adapt
+# Log-Analyzer / Logatory config example — copy to config.yaml and adapt
 
-pii_salt: ""           # set here or via LOGSENSE_PII_SALT env var
-db_path: logsense.db  # use /data/logsense.db inside Docker
+pii_salt: ""           # set here or via LOGATORY_PII_SALT env var
+db_path: logatory.db  # use /data/logatory.db inside Docker
 pii_rules_path: pii_rules.yaml
 
 # REST API auth — leave empty to disable (local dev / Docker with firewall)
-# Set via env var LOGSENSE_API_TOKEN or here (prefer env var)
+# Set via env var LOGATORY_API_TOKEN or here (prefer env var)
 api_token: ""
 
 # Plugin directory — *.py files here are auto-loaded at startup

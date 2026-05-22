@@ -12,21 +12,21 @@ from pathlib import Path
 
 import pytest
 
-from logsense.config import LLMConfig
-from logsense.llm.base import AbstractLLMClient
-from logsense.llm.client import OllamaClient, OllamaError
-from logsense.llm.factory import make_embed_client, make_llm_client
-from logsense.llm.openai_compat import OpenAICompatibleClient
-from logsense.llm.prompts import (
+from logatory.config import LLMConfig
+from logatory.llm.base import AbstractLLMClient
+from logatory.llm.client import OllamaClient, OllamaError
+from logatory.llm.factory import make_embed_client, make_llm_client
+from logatory.llm.openai_compat import OpenAICompatibleClient
+from logatory.llm.prompts import (
     ask_prompt,
     classify_events_prompt,
     explain_error_prompt,
     explain_finding_prompt,
     summarize_prompt,
 )
-from logsense.llm.retrieval import _keywords, _sqlite_search, retrieve_context
-from logsense.models import Finding, FindingSeverity
-from logsense.storage.errors_repo import ErrorsRepository
+from logatory.llm.retrieval import _keywords, _sqlite_search, retrieve_context
+from logatory.models import Finding, FindingSeverity
+from logatory.storage.errors_repo import ErrorsRepository
 
 _T0 = datetime(2024, 3, 15, 10, 0, 0, tzinfo=UTC)
 

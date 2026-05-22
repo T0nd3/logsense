@@ -8,11 +8,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from logsense.config import Config
-from logsense.models import Finding, FindingSeverity
-from logsense.storage.errors_repo import ErrorsRepository
-from logsense.storage.findings_repo import FindingsRepository
-from logsense.web.app import create_app
+from logatory.config import Config
+from logatory.models import Finding, FindingSeverity
+from logatory.storage.errors_repo import ErrorsRepository
+from logatory.storage.findings_repo import FindingsRepository
+from logatory.web.app import create_app
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures

@@ -32,7 +32,7 @@ htmlcov/
 *.db-shm
 *.db-wal
 chroma_index/
-logsense.db
+logatory.db
 
 # Secrets
 config.yaml

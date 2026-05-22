@@ -13,14 +13,14 @@ A clear description of what went wrong.
 The command or steps that trigger the bug, e.g.:
 
 ```
-logsense scan ...
+logatory scan ...
 ```
 
 **Expected behavior**
 What you expected to happen instead.
 
 **Environment**
-- LogSense version (`logsense version`):
+- Logatory version (`logatory version`):
 - OS:
 - Python version:
 - Install extras (e.g. `web`, `opensearch`):

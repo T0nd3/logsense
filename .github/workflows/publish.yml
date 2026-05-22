@@ -3,9 +3,9 @@
 #
 # One-time setup on PyPI — https://pypi.org/manage/account/publishing/
 # Add a "pending publisher" with:
-#   PyPI project name : logsense
+#   PyPI project name : logatory
 #   Owner             : T0nd3
-#   Repository name   : logsense
+#   Repository name   : logatory
 #   Workflow name     : publish.yml
 #   Environment name  : pypi
 name: Publish to PyPI
