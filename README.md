@@ -48,6 +48,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
   - [scan](#scan)
   - [Docker container logs](#docker-container-logs)
   - [systemd journal](#systemd-journal-journald)
+  - [Remote servers (SSH)](#remote-servers-ssh)
   - [tail](#tail)
   - [serve](#serve)
   - [findings](#findings)
@@ -86,6 +87,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 | **OpenSearch** | Query and analyse logs from OpenSearch / Elasticsearch clusters |
 | **systemd journal** | Read logs straight from journald via `journalctl` — scan history or follow live |
 | **Docker logs** | Read container logs straight from the Docker daemon — scan or follow, no log stack required |
+| **Remote over SSH** | Pull logs from any SSH-reachable host — no agent on the remote box; scan or follow live with auto-reconnect |
 | **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
 | **FP suppression** | Dismiss rules globally or per source file; reversible |
 | **Markdown export** | Automated security reports from the SQLite database |
@@ -255,6 +257,36 @@ logatory journald tail --unit sshd.service --alert-webhook https://hooks.example
 Syslog priorities map onto Logatory severities, and `journald tail` uses the
 journal's native cursor — every poll resumes exactly where the last one left
 off, so there are no duplicates and no gaps.
+
+---
+
+### Remote servers (SSH)
+
+For a server reachable only over SSH, Logatory pulls its logs straight over
+an existing SSH connection — **no agent on the remote box, no open port, no
+daemon**. It shells out to the system `ssh` client, so your `~/.ssh/config`
+(jump hosts, per-host keys, the agent) works unchanged. The remote source is
+either a log file or the systemd journal:
+
+```bash
+# Scan a remote log file
+logatory ssh scan user@host --path /var/log/auth.log
+
+# Scan the remote journal, one unit
+logatory ssh scan user@host --journald --unit nginx.service --since '-1h'
+
+# Through a jump host, on a non-standard port
+logatory ssh scan db01 --path /var/log/syslog --port 2222 --ssh-opt ProxyJump=bastion
+
+# Follow a remote host in real time (Ctrl+C to stop)
+logatory ssh tail user@host --path /var/log/app.log
+logatory ssh tail user@host --journald --unit sshd.service --alert-webhook https://hooks.example/logs
+```
+
+`ssh tail` streams over a long-lived connection (`journalctl -f` / `tail -F`)
+and reconnects automatically if it drops. In journald mode it resumes from
+the journal cursor, so a dropped connection costs neither duplicates nor
+gaps. Logs are redacted locally, after arriving over the encrypted SSH link.
 
 ---
 
