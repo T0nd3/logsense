@@ -16,6 +16,7 @@ from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository
 
 from ..deps import errors_repo, findings_repo, get_config, get_templates
+from ..fleet_targets import resolve_filter
 
 router = APIRouter()
 
@@ -31,20 +32,29 @@ def api_findings(
     severity: Optional[str] = None,
     source: Optional[str] = None,
     since_hours: Optional[int] = None,
+    target: Optional[str] = None,
     limit: int = 200,
     templates: Jinja2Templates = Depends(get_templates),
     f_repo: FindingsRepository = Depends(findings_repo),
 ) -> HTMLResponse:
     sev = severity or None
     src = source.strip() or None if source else None
+    target_names = resolve_filter(target)
 
     if since_hours:
         rows_raw = f_repo.recent_findings(since_hours=since_hours, severity=sev)
         if src:
             rows_raw = [r for r in rows_raw if dict(r)["source"] == src]
+        if target_names:
+            rows_raw = [r for r in rows_raw if dict(r).get("target") in target_names]
         rows = [dict(r) for r in rows_raw]
     else:
-        rows = [dict(r) for r in f_repo.list_findings(severity=sev, source=src, limit=limit)]
+        rows = [
+            dict(r)
+            for r in f_repo.list_findings(
+                severity=sev, source=src, limit=limit, targets=target_names
+            )
+        ]
 
     return templates.TemplateResponse(request, "partials/findings_rows.html", {"rows": rows})
 
@@ -54,10 +64,16 @@ def api_errors(
     request: Request,
     severity: Optional[str] = None,
     sort: str = "last_seen",
+    target: Optional[str] = None,
     templates: Jinja2Templates = Depends(get_templates),
     e_repo: ErrorsRepository = Depends(errors_repo),
 ) -> HTMLResponse:
-    rows = [dict(r) for r in e_repo.list_errors(sort=sort, severity=severity or None, limit=200)]
+    rows = [
+        dict(r)
+        for r in e_repo.list_errors(
+            sort=sort, severity=severity or None, limit=200, targets=resolve_filter(target)
+        )
+    ]
     return templates.TemplateResponse(request, "partials/errors_rows.html", {"rows": rows})
 
 

@@ -10,6 +10,7 @@ from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository
 
 from ..deps import errors_repo, findings_repo, get_templates
+from ..fleet_targets import fleet_options
 
 router = APIRouter()
 
@@ -50,7 +51,12 @@ def findings_page(
     return templates.TemplateResponse(
         request,
         "findings.html",
-        {"active_page": "findings", "rows": rows, "total": len(rows)},
+        {
+            "active_page": "findings",
+            "rows": rows,
+            "total": len(rows),
+            "targets": fleet_options(),
+        },
     )
 
 
@@ -72,5 +78,10 @@ def errors_page(
     return templates.TemplateResponse(
         request,
         "errors.html",
-        {"active_page": "errors", "rows": rows, "total": len(rows)},
+        {
+            "active_page": "errors",
+            "rows": rows,
+            "total": len(rows),
+            "targets": fleet_options(),
+        },
     )

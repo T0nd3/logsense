@@ -101,8 +101,9 @@ class FindingsRepository:
         severity: str | None = None,
         source: str | None = None,
         limit: int = 100,
+        targets: list[str] | None = None,
     ) -> list[sqlite3.Row]:
-        """List findings, newest first.  Optionally filter by severity / source."""
+        """List findings, newest first. Optionally filter by severity / source / targets."""
         assert self._conn
         query = "SELECT * FROM findings"
         params: list = []
@@ -114,6 +115,9 @@ class FindingsRepository:
         if source:
             conditions.append("source = ?")
             params.append(source)
+        if targets:
+            conditions.append(f"target IN ({','.join('?' * len(targets))})")
+            params.extend(targets)
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
 

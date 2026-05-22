@@ -106,6 +106,7 @@ class ErrorsRepository:
         sort: str = "last_seen",
         severity: str | None = None,
         limit: int = 50,
+        targets: list[str] | None = None,
     ) -> list[sqlite3.Row]:
         assert self._conn
         valid_sorts = {"last_seen", "count", "first_seen"}
@@ -114,9 +115,19 @@ class ErrorsRepository:
 
         query = "SELECT * FROM errors"
         params: list = []
+        conditions: list[str] = []
         if severity:
-            query += " WHERE severity = ?"
+            conditions.append("severity = ?")
             params.append(severity)
+        if targets:
+            placeholders = ",".join("?" * len(targets))
+            conditions.append(
+                f"fingerprint IN "
+                f"(SELECT fingerprint FROM error_occurrences WHERE target IN ({placeholders}))"
+            )
+            params.extend(targets)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
         query += f" ORDER BY {order_col} {direction} LIMIT ?"
         params.append(limit)
         return self._conn.execute(query, params).fetchall()

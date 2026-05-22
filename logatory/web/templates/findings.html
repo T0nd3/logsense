@@ -12,6 +12,15 @@
       hx-target="#findings-body"
       hx-indicator="#findings-loading">
 
+  {% if targets %}
+  <select name="target">
+    <option value="">All targets</option>
+    {% for opt in targets %}
+    <option value="{{ opt.value }}">{{ opt.label }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+
   <select name="severity">
     <option value="">All severities</option>
     <option value="critical">Critical</option>
