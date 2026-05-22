@@ -47,6 +47,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 - [CLI Reference](#cli-reference)
   - [scan](#scan)
   - [Docker container logs](#docker-container-logs)
+  - [systemd journal](#systemd-journal-journald)
   - [tail](#tail)
   - [serve](#serve)
   - [findings](#findings)
@@ -83,6 +84,8 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 | **Log upload** | Drag-and-drop log upload in the browser — instant scan with PII redaction, results shown inline |
 | **REST API v1** | Bearer-token auth, JSON endpoints for findings, errors, stats, live event ingestion |
 | **OpenSearch** | Query and analyse logs from OpenSearch / Elasticsearch clusters |
+| **systemd journal** | Read logs straight from journald via `journalctl` — scan history or follow live |
+| **Docker logs** | Read container logs straight from the Docker daemon — scan or follow, no log stack required |
 | **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
 | **FP suppression** | Dismiss rules globally or per source file; reversible |
 | **Markdown export** | Automated security reports from the SQLite database |
@@ -228,6 +231,30 @@ logatory docker tail --name my-service --alert-webhook https://hooks.example/log
 Each event is auto-detected per container (JSON, Nginx, plaintext, …),
 PII-redacted, and tagged with its container name. `docker tail` polls the
 daemon, so containers started after it launches are picked up automatically.
+
+---
+
+### systemd journal (journald)
+
+On a systemd-based Linux system, Logatory reads logs straight from the
+journal — no need to export to a file first. It shells out to `journalctl`,
+so there is no extra dependency to install:
+
+```bash
+# Scan recent journal entries
+logatory journald scan
+
+# One unit, within a time window; persist errors
+logatory journald scan --unit nginx.service --since '-1h' --track-errors
+
+# Follow the journal in real time (Ctrl+C to stop)
+logatory journald tail
+logatory journald tail --unit sshd.service --alert-webhook https://hooks.example/logs
+```
+
+Syslog priorities map onto Logatory severities, and `journald tail` uses the
+journal's native cursor — every poll resumes exactly where the last one left
+off, so there are no duplicates and no gaps.
 
 ---
 
