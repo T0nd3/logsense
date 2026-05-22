@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import queue
 import re
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 
+from logatory.adapters.base import SourceAdapter
 from logatory.cli._types import REDACT_MAP, RedactModeArg
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
@@ -27,7 +32,10 @@ from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import load_plugins
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir
+from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
+from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
+from logatory.tail_helpers import meets_alert_severity, post_webhook
 
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
@@ -39,6 +47,9 @@ _SEVERITY_COLOR = {
     "high": typer.colors.RED,
     "critical": typer.colors.BRIGHT_RED,
 }
+
+# Event-severity ordering for the `fleet tail --min-severity` filter.
+_EVENT_SEV_ORDER = {"debug": 0, "info": 1, "warning": 2, "error": 3, "critical": 4}
 
 
 @app.callback()
@@ -135,17 +146,21 @@ def _print_events(events: list[Event], limit: int, show_all: bool) -> None:
         typer.echo(f"\n  ... {len(events) - limit:,} more. Use --show-all or --limit N.")
 
 
+def _print_finding(target_name: str, finding: Finding) -> None:
+    color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+    ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    line = (
+        f"  [{finding.severity.value.upper()}] {ts}  {target_name}  "
+        f"{finding.rule_id}  {finding.message}"
+    )
+    typer.echo(typer.style(line, fg=color))
+
+
 def _print_findings(findings: list[tuple[str, Finding]], no_rules: bool) -> None:
     if findings:
         typer.echo(f"\n  Findings ({len(findings)}):\n")
         for target_name, finding in findings:
-            color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
-            ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            line = (
-                f"  [{finding.severity.value.upper()}] {ts}  {target_name}  "
-                f"{finding.rule_id}  {finding.message}"
-            )
-            typer.echo(typer.style(line, fg=color))
+            _print_finding(target_name, finding)
     elif not no_rules:
         typer.echo("\n  No findings.")
 
@@ -256,3 +271,268 @@ def fleet_scan(
 
     if track_errors:
         typer.echo(f"\n  Errors tracked: {errors_tracked:,} -> {cfg.db_path}")
+
+
+# ---------------------------------------------------------------------------
+# fleet tail
+# ---------------------------------------------------------------------------
+
+
+def _event_visible(event: Event, show_events: bool, min_threshold: Optional[int]) -> bool:
+    """Decide whether a raw event is printed (findings always print separately)."""
+    if show_events:
+        return True
+    if min_threshold is None:
+        return False
+    return _EVENT_SEV_ORDER.get(event.severity.value, 0) >= min_threshold
+
+
+def _print_event(event: Event) -> None:
+    ts = event.timestamp.strftime("%Y-%m-%d %H:%M:%S") if event.timestamp else "no timestamp"
+    sev = event.severity.value.upper().ljust(8)
+    tgt = str(event.parsed_fields.get("target", "?"))
+    typer.echo(f"  {ts}  {sev}  {tgt}  {event.message[:100]}")
+
+
+def _print_heartbeat(
+    status: dict[str, str], events_window: int, hb_interval: float, total_findings: int
+) -> None:
+    up = sum(1 for s in status.values() if s == "up")
+    down = [name for name, s in status.items() if s != "up"]
+    line = (
+        f"  [heartbeat {datetime.now().strftime('%H:%M:%S')}]  {up}/{len(status)} up  ·  "
+        f"{events_window} ev/{hb_interval:g}s  ·  {total_findings} findings"
+    )
+    if down:
+        line += f"  ·  down: {', '.join(down)}"
+    typer.echo(typer.style(line, fg=typer.colors.BRIGHT_BLACK))
+
+
+def _tail_worker(name: str, adapter: SourceAdapter, interval: float, q: queue.Queue) -> None:
+    """Drain one target's poll() into the shared queue. Runs as a daemon thread."""
+
+    async def _drain() -> None:
+        async for event in adapter.poll(interval):  # type: ignore[attr-defined]
+            event.parsed_fields["target"] = name
+            q.put(("event", name, event))
+
+    try:
+        asyncio.run(_drain())
+        q.put(("down", name, "stream ended"))
+    except Exception as e:
+        q.put(("down", name, str(e)))
+
+
+@app.command("tail")
+def fleet_tail(
+    targets_file: Annotated[Path, typer.Option("--targets", help="Targets file to load.")] = Path(
+        "targets.yaml"
+    ),
+    target: Annotated[
+        Optional[list[str]],
+        typer.Option("--target", help="Select a target by name (repeatable)."),
+    ] = None,
+    group: Annotated[
+        Optional[list[str]],
+        typer.Option("--group", help="Select targets by group (repeatable)."),
+    ] = None,
+    poll_interval: Annotated[
+        float, typer.Option("--poll-interval", help="Seconds between polls, per target.")
+    ] = 10.0,
+    heartbeat_interval: Annotated[
+        float, typer.Option("--heartbeat-interval", help="Seconds between heartbeat lines.")
+    ] = 30.0,
+    no_heartbeat: Annotated[
+        bool, typer.Option("--no-heartbeat", help="Suppress the heartbeat line.")
+    ] = False,
+    show_events: Annotated[
+        bool, typer.Option("--show-events", help="Print every event, not just findings.")
+    ] = False,
+    min_severity: Annotated[
+        Optional[str],
+        typer.Option("--min-severity", help="Also print raw events at/above this severity."),
+    ] = None,
+    config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
+    redact: Annotated[RedactModeArg, typer.Option("--redact")] = RedactModeArg.redact,
+    no_rules: Annotated[bool, typer.Option("--no-rules", help="Skip the rule engine.")] = False,
+    rules_dir: Annotated[Optional[Path], typer.Option("--rules-dir")] = None,
+    track_errors: Annotated[
+        bool, typer.Option("--track-errors", help="Persist errors to SQLite.")
+    ] = False,
+    track_findings: Annotated[
+        bool, typer.Option("--track-findings", help="Persist HIGH/CRITICAL findings to SQLite.")
+    ] = False,
+    alert_webhook: Annotated[
+        Optional[str], typer.Option("--alert-webhook", help="POST findings as JSON to this URL.")
+    ] = None,
+    alert_min_severity: Annotated[
+        str, typer.Option("--alert-min-severity", help="Minimum severity to fire the webhook.")
+    ] = "high",
+) -> None:
+    """Follow every configured target in real time — redact PII, run rules, alert.
+
+    Each target is polled in its own thread and the events are merged into
+    one stream. By default only findings print, with a periodic heartbeat;
+    a target that drops out is reported but the rest keep running. File
+    targets cannot be followed and are skipped. Runs until Ctrl+C.
+    """
+    min_threshold: Optional[int] = None
+    if min_severity is not None:
+        min_threshold = _EVENT_SEV_ORDER.get(min_severity.lower())
+        if min_threshold is None:
+            raise typer.BadParameter(
+                f"--min-severity must be one of: {', '.join(_EVENT_SEV_ORDER)}"
+            )
+
+    try:
+        selected = select_targets(load_targets(targets_file), target, group)
+    except TargetConfigError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    cfg = Config.load(config)
+    plugin_registry = load_plugins(cfg.plugins_dir)
+    plugin_pii = [
+        PIIPattern(name=p["name"], pattern=re.compile(p["pattern"]), prefix=p["prefix"])
+        for p in plugin_registry.pii_patterns
+    ]
+    redactor = PIIRedactor.from_config(
+        salt=cfg.pii_salt,
+        rules_path=cfg.pii_rules_path,
+        mode=REDACT_MAP[redact],
+        additional=plugin_pii or None,
+    )
+    engine = _build_engine(no_rules, rules_dir, plugin_registry)
+
+    # Only targets whose adapter supports poll() can be followed.
+    tailable: list[tuple[str, SourceAdapter]] = []
+    notices: list[str] = []
+    for t in selected:
+        try:
+            adapter = build_adapter(t)
+        except Exception as e:
+            notices.append(f"{t.name}: skipped — {e}")
+            continue
+        if hasattr(adapter, "poll"):
+            tailable.append((t.name, adapter))
+        else:
+            notices.append(f"{t.name}: skipped — type '{t.type}' has no realtime tail")
+
+    if not tailable:
+        typer.echo("Error: no tailable targets (file targets cannot be followed).", err=True)
+        raise typer.Exit(1)
+
+    sep = "  " + "-" * 66
+    if show_events:
+        out_mode = "all events + findings"
+    elif min_threshold is not None:
+        out_mode = f"findings + events at/above {min_severity.lower()}"
+    else:
+        out_mode = "findings only"
+    typer.echo(f"\n{sep}")
+    typer.echo(f"  Fleet tail — {len(tailable)} target(s)")
+    typer.echo(f"  Poll      : every {poll_interval:g}s")
+    if not no_heartbeat:
+        typer.echo(f"  Heartbeat : every {heartbeat_interval:g}s")
+    typer.echo(f"  Output    : {out_mode}")
+    typer.echo(f"  Rules     : {'off' if no_rules else 'on'}")
+    if alert_webhook:
+        typer.echo(f"  Webhook   : {alert_webhook}  (min: {alert_min_severity})")
+    for note in notices:
+        typer.echo(typer.style(f"  Note      : {note}", fg=typer.colors.YELLOW))
+    typer.echo("  Press Ctrl+C to stop.")
+    typer.echo(f"{sep}\n")
+
+    e_repo: ErrorsRepository | None = None
+    f_repo: FindingsRepository | None = None
+    d_repo: DismissRepository | None = None
+    tracker: ErrorTracker | None = None
+    if track_errors:
+        e_repo = ErrorsRepository(cfg.db_path)
+        e_repo.open()
+        tracker = ErrorTracker(e_repo)
+    if track_findings:
+        f_repo = FindingsRepository(cfg.db_path)
+        f_repo.open()
+    if engine:
+        d_repo = DismissRepository(cfg.db_path)
+        d_repo.open()
+
+    q: queue.Queue = queue.Queue()
+    status = {name: "up" for name, _ in tailable}
+    for name, adapter in tailable:
+        threading.Thread(
+            target=_tail_worker, args=(name, adapter, poll_interval, q), daemon=True
+        ).start()
+
+    counts = {"events": 0, "findings": 0, "pii": 0, "errors": 0, "webhooks": 0}
+    events_window = 0
+    last_hb = time.monotonic()
+
+    try:
+        while True:
+            try:
+                kind, name, payload = q.get(timeout=1.0)
+            except queue.Empty:
+                kind = name = payload = None
+
+            if kind == "event":
+                event = payload
+                result = redactor.redact(event.message)
+                event.message = result.text
+                event.raw = redactor.redact(event.raw).text
+                counts["pii"] += len(result.hits)
+                counts["events"] += 1
+                events_window += 1
+
+                if _event_visible(event, show_events, min_threshold):
+                    _print_event(event)
+
+                if engine:
+                    for finding in engine.process(event):
+                        if d_repo and d_repo.is_dismissed(finding.rule_id, finding.source):
+                            continue
+                        _print_finding(name, finding)
+                        counts["findings"] += 1
+                        if alert_webhook and meets_alert_severity(finding, alert_min_severity):
+                            post_webhook(alert_webhook, finding)
+                            counts["webhooks"] += 1
+                        if f_repo and meets_min_severity(finding, cfg.findings_min_severity):
+                            f_repo.add_findings([finding])
+                if tracker and tracker.process(event) is not None:
+                    counts["errors"] += 1
+
+            elif kind == "down":
+                status[name] = "down"
+                typer.echo(
+                    typer.style(f"  [target down]  {name}: {payload}", fg=typer.colors.RED),
+                    err=True,
+                )
+                if all(s != "up" for s in status.values()):
+                    typer.echo("  All targets down — stopping.")
+                    break
+
+            if not no_heartbeat and time.monotonic() - last_hb >= heartbeat_interval:
+                _print_heartbeat(status, events_window, heartbeat_interval, counts["findings"])
+                events_window = 0
+                last_hb = time.monotonic()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if e_repo:
+            e_repo.close()
+        if f_repo:
+            f_repo.close()
+        if d_repo:
+            d_repo.close()
+
+    typer.echo(f"\n{sep}")
+    typer.echo("  Stopped.")
+    typer.echo(f"  Events   : {counts['events']:,}")
+    typer.echo(f"  PII hits : {counts['pii']:,}")
+    typer.echo(f"  Findings : {counts['findings']:,}")
+    if track_errors:
+        typer.echo(f"  Errors   : {counts['errors']:,} tracked")
+    if alert_webhook:
+        typer.echo(f"  Webhooks : {counts['webhooks']:,} sent")
+    typer.echo(sep)
