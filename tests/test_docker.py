@@ -122,3 +122,55 @@ class TestDockerAdapter:
         client = self._client()
         _ = [e async for e in DockerAdapter(include_stopped=True, client=client).events()]
         assert client.containers.list.call_args.kwargs["all"] is True
+
+
+# ---------------------------------------------------------------------------
+# Realtime polling
+# ---------------------------------------------------------------------------
+
+
+class _PollContainer:
+    """A fake container whose logs() returns a different response per call."""
+
+    def __init__(self, name: str, responses: list[bytes], tty: bool = True) -> None:
+        self.name = name
+        self.attrs = {"Config": {"Tty": tty}}
+        self._responses = list(responses)
+
+    def logs(self, **kwargs) -> bytes:
+        return self._responses.pop(0) if self._responses else b""
+
+
+class TestDockerPoll:
+    async def test_poll_dedups_by_timestamp(self):
+        r1 = b"2026-05-22T10:00:00.000000000Z first\n2026-05-22T10:00:01.000000000Z second\n"
+        r2 = (
+            b"2026-05-22T10:00:01.000000000Z second\n"  # boundary repeat — skip
+            b"2026-05-22T10:00:02.000000000Z third\n"  # genuinely new — yield
+        )
+        container = _PollContainer("svc", [r1, r2, b"", b""])
+        client = MagicMock()
+        client.containers.list.return_value = [container]
+
+        collected: list[str] = []
+        async for event in DockerAdapter(client=client).poll(interval=0):
+            collected.append(event.message)
+            if len(collected) >= 3:
+                break
+
+        assert collected == ["first", "second", "third"]
+
+    async def test_poll_picks_up_new_container(self):
+        c1 = _PollContainer("alpha", [b"2026-05-22T10:00:00.000000000Z from-a\n", b"", b""])
+        c2 = _PollContainer("beta", [b"2026-05-22T10:00:05.000000000Z from-b\n", b"", b""])
+        client = MagicMock()
+        # beta only shows up on the second poll
+        client.containers.list.side_effect = [[c1], [c1, c2], [c1, c2], [c1, c2]]
+
+        collected: list[str] = []
+        async for event in DockerAdapter(client=client).poll(interval=0):
+            collected.append(event.message)
+            if len(collected) >= 2:
+                break
+
+        assert set(collected) == {"from-a", "from-b"}

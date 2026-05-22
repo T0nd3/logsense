@@ -219,13 +219,15 @@ logatory docker scan --name my-service --track-errors
 
 # Filter by label, include stopped containers
 logatory docker scan --label app=web --all
+
+# Follow containers in real time (Ctrl+C to stop)
+logatory docker tail
+logatory docker tail --name my-service --alert-webhook https://hooks.example/logs
 ```
 
 Each event is auto-detected per container (JSON, Nginx, plaintext, …),
-PII-redacted, and tagged with its container name.
-
-> Realtime follow (`logatory docker tail`) is on the way. Until then, for a
-> single container you can pipe: `docker logs -f my-service | logatory scan -`.
+PII-redacted, and tagged with its container name. `docker tail` polls the
+daemon, so containers started after it launches are picked up automatically.
 
 ---
 

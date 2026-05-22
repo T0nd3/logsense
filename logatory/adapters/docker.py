@@ -8,6 +8,7 @@ Install the optional dependency first: pip install logatory[docker]
 
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -92,14 +93,16 @@ class DockerAdapter(SourceAdapter):
             filters["label"] = self._label
         return client.containers.list(all=self._include_stopped, filters=filters or None)
 
-    def _read_lines(self, container) -> list[tuple[datetime | None, str]]:
+    def _read_lines(
+        self, container, *, since: datetime | None, tail: int
+    ) -> list[tuple[datetime | None, str]]:
         """Fetch one container's logs as (timestamp, content) pairs."""
         raw = container.logs(
             stdout=True,
             stderr=True,
             timestamps=True,
-            tail=self._tail,
-            since=self._since,
+            tail=tail,
+            since=since,
             stream=False,
         )
         if not isinstance(raw, bytes):
@@ -118,23 +121,68 @@ class DockerAdapter(SourceAdapter):
                 pairs.append((None, line))
         return pairs
 
+    @staticmethod
+    def _to_event(parser, ts: datetime | None, content: str, name: str) -> Event | None:
+        event = parser.parse(content)
+        if event is None:
+            return None
+        event.source = name
+        # Docker's own timestamp is reliable; use it if the parser found none
+        if event.timestamp is None and ts is not None:
+            event.timestamp = ts
+        event.parsed_fields["container"] = name
+        return event
+
     async def events(self) -> AsyncIterator[Event]:
+        """Yield every event from matching containers once (batch mode)."""
         client = self._connect()
         for container in self._list_containers(client):
             name = getattr(container, "name", None) or "container"
-            pairs = self._read_lines(container)
+            pairs = self._read_lines(container, since=self._since, tail=self._tail)
             if not pairs:
                 continue
             # Detect the inner log format per container (JSON, Nginx, plaintext, …)
             sample = [content for _, content in pairs[:5] if content.strip()]
             parser = get_parser(FormatDetector().detect(sample), source=name)
             for ts, content in pairs:
-                event = parser.parse(content)
-                if event is None:
+                event = self._to_event(parser, ts, content, name)
+                if event is not None:
+                    yield event
+
+    async def poll(self, interval: float) -> AsyncIterator[Event]:
+        """Poll matching containers forever, yielding only newly-arrived events.
+
+        Containers are re-listed every round, so containers started after
+        the poll began are picked up automatically. New lines are tracked
+        per container via a timestamp cursor — Docker's nanosecond
+        timestamps make a same-instant collision effectively impossible.
+        Runs until the caller stops iterating.
+        """
+        client = self._connect()
+        cursors: dict[str, datetime] = {}
+        parsers: dict = {}
+
+        while True:
+            for container in self._list_containers(client):
+                name = getattr(container, "name", None) or "container"
+                cursor = cursors.get(name)
+                pairs = self._read_lines(container, since=cursor or self._since, tail=self._tail)
+                if not pairs:
                     continue
-                event.source = name
-                # Docker's own timestamp is reliable; use it if the parser found none
-                if event.timestamp is None and ts is not None:
-                    event.timestamp = ts
-                event.parsed_fields["container"] = name
-                yield event
+                if name not in parsers:
+                    sample = [c for _, c in pairs[:5] if c.strip()]
+                    parsers[name] = get_parser(FormatDetector().detect(sample), source=name)
+                parser = parsers[name]
+                newest = cursor
+                for ts, content in pairs:
+                    if ts is not None and cursor is not None and ts <= cursor:
+                        continue  # already delivered in an earlier round
+                    event = self._to_event(parser, ts, content, name)
+                    if event is not None:
+                        yield event
+                    if ts is not None and (newest is None or ts > newest):
+                        newest = ts
+                if newest is not None:
+                    cursors[name] = newest
+
+            await asyncio.sleep(interval)

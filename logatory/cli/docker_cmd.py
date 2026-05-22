@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -19,7 +20,10 @@ from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import load_plugins
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir
+from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
+from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
+from logatory.tail_helpers import meets_alert_severity, post_webhook
 
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
@@ -149,3 +153,171 @@ def docker_scan(
             tracker = ErrorTracker(e_repo)
             tracked = sum(1 for ev in events if tracker.process(ev) is not None)
         typer.echo(f"\n  Errors tracked: {tracked:,} -> {cfg.db_path}")
+
+
+def _print_finding(finding: Finding) -> None:
+    color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+    ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"  [{finding.severity.value.upper()}] {ts}  {finding.rule_id}  {finding.message}"
+    typer.echo(typer.style(line, fg=color))
+
+
+_LOOKBACK_RE = re.compile(r"^(\d+)([smhd])$")
+_UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+
+
+def _parse_lookback(spec: str) -> datetime:
+    """Convert a relative spec like '5m' / '1h' to an absolute UTC datetime."""
+    m = _LOOKBACK_RE.match(spec.strip())
+    if not m:
+        raise typer.BadParameter(f"Invalid time spec '{spec}'. Use e.g. 30s, 5m, 1h.")
+    return datetime.now(tz=UTC) - timedelta(seconds=int(m.group(1)) * _UNIT_SECONDS[m.group(2)])
+
+
+@app.command("tail")
+def docker_tail(
+    name: Annotated[
+        Optional[str], typer.Option("--name", "-n", help="Filter containers by name (substring).")
+    ] = None,
+    label: Annotated[
+        Optional[str], typer.Option("--label", "-l", help="Filter by label: 'key' or 'key=value'.")
+    ] = None,
+    include_stopped: Annotated[
+        bool, typer.Option("--all", "-a", help="Include stopped containers.")
+    ] = False,
+    since: Annotated[
+        str, typer.Option("--since", help="Initial lookback window: 30s, 5m, 1h.")
+    ] = "1m",
+    poll_interval: Annotated[
+        float, typer.Option("--poll-interval", help="Seconds between polls.")
+    ] = 3.0,
+    config: Annotated[Optional[Path], typer.Option("--config", "-c")] = None,
+    redact: Annotated[RedactModeArg, typer.Option("--redact")] = RedactModeArg.redact,
+    no_rules: Annotated[bool, typer.Option("--no-rules", help="Skip the rule engine.")] = False,
+    rules_dir: Annotated[Optional[Path], typer.Option("--rules-dir")] = None,
+    track_errors: Annotated[
+        bool, typer.Option("--track-errors", help="Persist errors to SQLite.")
+    ] = False,
+    track_findings: Annotated[
+        bool, typer.Option("--track-findings", help="Persist HIGH/CRITICAL findings to SQLite.")
+    ] = False,
+    alert_webhook: Annotated[
+        Optional[str], typer.Option("--alert-webhook", help="POST findings as JSON to this URL.")
+    ] = None,
+    alert_min_severity: Annotated[
+        str, typer.Option("--alert-min-severity", help="Minimum severity to fire the webhook.")
+    ] = "high",
+) -> None:
+    """Follow local Docker containers in real time — redact PII, run rules, alert.
+
+    Polls matching containers every --poll-interval seconds; containers
+    started later are picked up automatically. Runs until Ctrl+C.
+    """
+    cfg = Config.load(config)
+    lookback = _parse_lookback(since)
+
+    plugin_registry = load_plugins(cfg.plugins_dir)
+    plugin_pii = [
+        PIIPattern(name=p["name"], pattern=re.compile(p["pattern"]), prefix=p["prefix"])
+        for p in plugin_registry.pii_patterns
+    ]
+    redactor = PIIRedactor.from_config(
+        salt=cfg.pii_salt,
+        rules_path=cfg.pii_rules_path,
+        mode=REDACT_MAP[redact],
+        additional=plugin_pii or None,
+    )
+
+    engine: RuleEngine | None = None
+    if not no_rules:
+        all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+        if rules_dir and rules_dir.is_dir():
+            all_rules.extend(load_rules_dir(rules_dir))
+        for pdir in plugin_registry.rule_dirs:
+            all_rules.extend(load_rules_dir(pdir))
+        all_rules.extend(plugin_registry.rules)
+        engine = RuleEngine(all_rules)
+
+    sep = "-" * 60
+    typer.echo(f"\n{sep}")
+    typer.echo(f"  Following : Docker — {name or label or 'all containers'}")
+    typer.echo(f"  Interval  : {poll_interval}s   Lookback: {since}")
+    typer.echo(f"  Rules     : {'off' if no_rules else 'on'}")
+    if alert_webhook:
+        typer.echo(f"  Webhook   : {alert_webhook}  (min: {alert_min_severity})")
+    typer.echo("  Press Ctrl+C to stop.")
+    typer.echo(f"{sep}\n")
+
+    counts = {"events": 0, "findings": 0, "pii": 0, "errors": 0, "webhooks": 0}
+
+    async def _run() -> None:
+        e_repo: ErrorsRepository | None = None
+        tracker: ErrorTracker | None = None
+        f_repo: FindingsRepository | None = None
+        d_repo: DismissRepository | None = None
+
+        if track_errors:
+            e_repo = ErrorsRepository(cfg.db_path)
+            e_repo.open()
+            tracker = ErrorTracker(e_repo)
+        if track_findings:
+            f_repo = FindingsRepository(cfg.db_path)
+            f_repo.open()
+        if engine:
+            d_repo = DismissRepository(cfg.db_path)
+            d_repo.open()
+
+        adapter = DockerAdapter(
+            name=name, label=label, include_stopped=include_stopped, since=lookback
+        )
+        try:
+            async for event in adapter.poll(poll_interval):
+                result = redactor.redact(event.message)
+                event.message = result.text
+                event.raw = redactor.redact(event.raw).text
+                counts["pii"] += len(result.hits)
+                counts["events"] += 1
+
+                if engine:
+                    for finding in engine.process(event):
+                        if d_repo and d_repo.is_dismissed(finding.rule_id, finding.source):
+                            continue
+                        _print_finding(finding)
+                        counts["findings"] += 1
+                        if alert_webhook and meets_alert_severity(finding, alert_min_severity):
+                            post_webhook(alert_webhook, finding)
+                            counts["webhooks"] += 1
+                        if f_repo and meets_min_severity(finding, cfg.findings_min_severity):
+                            f_repo.add_findings([finding])
+
+                if tracker and tracker.process(event) is not None:
+                    counts["errors"] += 1
+        finally:
+            if e_repo:
+                e_repo.close()
+            if f_repo:
+                f_repo.close()
+            if d_repo:
+                d_repo.close()
+
+    try:
+        asyncio.run(_run())
+    except KeyboardInterrupt:
+        pass
+    except ImportError as e:
+        typer.echo(f"\nError: {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"\nError talking to Docker: {e}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"\n{sep}")
+    typer.echo("  Stopped.")
+    typer.echo(f"  Events   : {counts['events']:,}")
+    typer.echo(f"  PII hits : {counts['pii']:,}")
+    typer.echo(f"  Findings : {counts['findings']:,}")
+    if track_errors:
+        typer.echo(f"  Errors   : {counts['errors']:,} tracked")
+    if alert_webhook:
+        typer.echo(f"  Webhooks : {counts['webhooks']:,} sent")
+    typer.echo(sep)
