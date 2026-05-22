@@ -5,8 +5,12 @@ from __future__ import annotations
 import asyncio
 import queue
 import re
+import shutil
+import subprocess
 import threading
 import time
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
@@ -636,3 +640,136 @@ def fleet_init(
         typer.echo("  Set these environment variables before running fleet commands:")
         for var in sorted(env_vars):
             typer.echo(f"    export {var}=...")
+
+
+# ---------------------------------------------------------------------------
+# fleet list
+# ---------------------------------------------------------------------------
+
+
+def _endpoint_url(target: Target) -> str:
+    p = target.params
+    if target.type == "loki":
+        return str(p.get("url", "http://localhost:3100"))
+    if target.type == "graylog":
+        return str(p.get("url", "http://localhost:9000"))
+    scheme = "https" if p.get("use_ssl") else "http"  # opensearch
+    return f"{scheme}://{p.get('host', 'localhost')}:{p.get('port', 9200)}"
+
+
+def _http_reachable(url: str, timeout: float) -> tuple[bool, str]:
+    try:
+        urllib.request.urlopen(url, timeout=timeout)
+        return True, ""
+    except urllib.error.HTTPError:
+        return True, ""  # the server answered (even an error) — it is reachable
+    except Exception as e:
+        return False, str(getattr(e, "reason", e))[:80]
+
+
+def _probe(target: Target, timeout: float) -> tuple[bool, str]:
+    """Quick reachability check for one target. Returns (reachable, detail)."""
+    p = target.params
+    try:
+        if target.type == "file":
+            ok = bool(p.get("path")) and Path(p["path"]).exists()
+            return ok, "" if ok else "file not found"
+        if target.type == "journald":
+            ok = shutil.which("journalctl") is not None
+            return ok, "" if ok else "journalctl not on PATH"
+        if target.type == "ssh":
+            result = subprocess.run(
+                [
+                    "ssh",
+                    "-o",
+                    "BatchMode=yes",
+                    "-o",
+                    f"ConnectTimeout={int(timeout)}",
+                    str(p.get("host", "")),
+                    "true",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=timeout + 5,
+            )
+            ok = result.returncode == 0
+            return ok, "" if ok else result.stderr.strip()[:80]
+        if target.type == "docker":
+            from logatory.adapters.docker import _require_docker
+
+            _require_docker().from_env().ping()
+            return True, ""
+        if target.type in ("loki", "graylog", "opensearch"):
+            return _http_reachable(_endpoint_url(target), timeout)
+        return False, "unknown type"
+    except Exception as e:
+        return False, str(e)[:80]
+
+
+@app.command("list")
+def fleet_list(
+    targets_file: Annotated[Path, typer.Option("--targets", help="Targets file to load.")] = Path(
+        "targets.yaml"
+    ),
+    target: Annotated[
+        Optional[list[str]],
+        typer.Option("--target", help="Select a target by name (repeatable)."),
+    ] = None,
+    group: Annotated[
+        Optional[list[str]],
+        typer.Option("--group", help="Select targets by group (repeatable)."),
+    ] = None,
+    check: Annotated[
+        bool, typer.Option("--check", help="Probe each target's reachability.")
+    ] = False,
+    timeout: Annotated[
+        float, typer.Option("--timeout", help="Per-target probe timeout, seconds.")
+    ] = 5.0,
+) -> None:
+    """List the configured fleet targets, optionally probing reachability."""
+    try:
+        selected = select_targets(load_targets(targets_file), target, group)
+    except TargetConfigError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    statuses: list[tuple[bool, str]] = []
+    if check:
+        typer.echo(f"\n  Probing {len(selected)} target(s)...")
+        with ThreadPoolExecutor(max_workers=max(1, min(16, len(selected)))) as pool:
+            statuses = list(pool.map(lambda t: _probe(t, timeout), selected))
+
+    name_w = max([len("NAME")] + [len(t.name) for t in selected])
+    type_w = max([len("TYPE")] + [len(t.type) for t in selected])
+    sep = "  " + "-" * 66
+    typer.echo(f"\n{sep}")
+    if check:
+        typer.echo(
+            f"  {'NAME'.ljust(name_w)}  {'TYPE'.ljust(type_w)}  {'STATUS'.ljust(12)}  GROUPS"
+        )
+    else:
+        typer.echo(f"  {'NAME'.ljust(name_w)}  {'TYPE'.ljust(type_w)}  GROUPS")
+    typer.echo(sep)
+
+    for i, t in enumerate(selected):
+        groups = ", ".join(t.groups) or "—"
+        if check:
+            ok, detail = statuses[i]
+            label = "reachable" if ok else "unreachable"
+            color = typer.colors.GREEN if ok else typer.colors.RED
+            status = typer.style(label.ljust(12), fg=color)
+            typer.echo(f"  {t.name.ljust(name_w)}  {t.type.ljust(type_w)}  {status}  {groups}")
+            if not ok and detail:
+                typer.echo(f"  {' ' * name_w}  └─ {detail}")
+        else:
+            typer.echo(f"  {t.name.ljust(name_w)}  {t.type.ljust(type_w)}  {groups}")
+
+    typer.echo(sep)
+    if check:
+        up = sum(1 for ok, _ in statuses if ok)
+        typer.echo(
+            f"  {len(selected)} target(s) · {up} reachable · {len(selected) - up} unreachable"
+        )
+    else:
+        typer.echo(f"  {len(selected)} target(s)")
+    typer.echo(sep)
