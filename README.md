@@ -1,8 +1,9 @@
 # Logatory
 
+[![PyPI](https://img.shields.io/pypi/v/logatory.svg)](https://pypi.org/project/logatory/)
 [![CI](https://github.com/T0nd3/logatory/actions/workflows/ci.yml/badge.svg)](https://github.com/T0nd3/logatory/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/pypi/pyversions/logatory.svg)](https://pypi.org/project/logatory/)
 
 **Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
 
