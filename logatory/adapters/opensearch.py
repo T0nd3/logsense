@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
 from ..models import Event, Severity
 from .base import SourceAdapter
-from .opensearch_config import FieldMapping, OpenSearchAuth, OpenSearchQuery, build_query_dsl
+from .opensearch_config import (
+    FieldMapping,
+    OpenSearchAuth,
+    OpenSearchQuery,
+    TimeRange,
+    build_query_dsl,
+)
 
 _SEVERITY_MAP = {
     "debug": Severity.DEBUG,
@@ -121,8 +129,12 @@ def _map_hit(hit: dict, mapping: FieldMapping, index: str) -> Event | None:
         if sn:
             source_name = str(sn)
 
-    # Everything in _source goes into parsed_fields
+    # Everything in _source goes into parsed_fields; also carry the document
+    # _id so realtime polling can deduplicate across overlapping queries.
     parsed_fields = {k: v for k, v in source.items() if isinstance(v, (str, int, float, bool))}
+    doc_id = hit.get("_id")
+    if doc_id is not None:
+        parsed_fields["_id"] = doc_id
 
     return Event(
         raw=message,
@@ -157,17 +169,17 @@ class OpenSearchAdapter(SourceAdapter):
         self._use_ssl = use_ssl
         self._verify_certs = verify_certs
 
-    async def events(self) -> AsyncIterator[Event]:
-        client = _make_client(
-            self._host, self._port, self._use_ssl, self._verify_certs, self._auth
-        )
-        dsl = build_query_dsl(self._query)
-        mapping = self._query.field_mapping
-        index = self._query.index
-        page_size = self._query.page_size
-        max_events = self._query.max_events
-        total_yielded = 0
+    def _client(self):
+        return _make_client(self._host, self._port, self._use_ssl, self._verify_certs, self._auth)
 
+    def _fetch(self, client, query: OpenSearchQuery) -> list[Event]:
+        """Run one paginated search and return all matching events."""
+        dsl = build_query_dsl(query)
+        mapping = query.field_mapping
+        index = query.index
+        page_size = query.page_size
+        max_events = query.max_events
+        out: list[Event] = []
         search_after: list | None = None
 
         while True:
@@ -177,23 +189,61 @@ class OpenSearchAdapter(SourceAdapter):
 
             response = client.search(index=index, body=body)
             hits = response.get("hits", {}).get("hits", [])
-
             if not hits:
                 break
 
             for hit in hits:
                 event = _map_hit(hit, mapping, index)
                 if event is not None:
-                    yield event
-                    total_yielded += 1
-                    if max_events is not None and total_yielded >= max_events:
-                        return
+                    out.append(event)
+                    if max_events is not None and len(out) >= max_events:
+                        return out
 
             # Advance the cursor to the sort values of the last hit
             search_after = hits[-1].get("sort")
-            if not search_after:
+            if not search_after or len(hits) < page_size:
                 break
 
-            # If we got fewer results than requested, we've reached the end
-            if len(hits) < page_size:
-                break
+        return out
+
+    async def events(self) -> AsyncIterator[Event]:
+        """Yield every event matching the query once (batch mode)."""
+        client = self._client()
+        for event in self._fetch(client, self._query):
+            yield event
+
+    async def poll(self, interval: float) -> AsyncIterator[Event]:
+        """Poll the index forever, yielding only newly-arrived events.
+
+        Each round queries for events at or after the newest timestamp
+        seen so far and skips documents already delivered (by `_id`), so
+        events on the timestamp boundary are neither dropped nor sent
+        twice. Runs until the caller stops iterating.
+        """
+        client = self._client()
+        cursor: datetime | None = None
+        seen_ids: set[str] = set()
+
+        while True:
+            if cursor is None:
+                query = self._query
+            else:
+                query = replace(self._query, time_range=TimeRange(since=cursor.isoformat()))
+
+            batch = self._fetch(client, query)
+            batch_ids: set[str] = set()
+            for event in batch:
+                doc_id = event.parsed_fields.get("_id")
+                if doc_id is not None:
+                    doc_id = str(doc_id)
+                    batch_ids.add(doc_id)
+                    if doc_id in seen_ids:
+                        continue
+                yield event
+                if event.timestamp is not None and (cursor is None or event.timestamp > cursor):
+                    cursor = event.timestamp
+
+            if batch_ids:
+                seen_ids = batch_ids
+
+            await asyncio.sleep(interval)

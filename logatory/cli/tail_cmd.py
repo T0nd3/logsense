@@ -31,7 +31,7 @@ from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
 from logatory.tail_helpers import meets_alert_severity, post_webhook
 
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "logatory" / "rules" / "builtin"
+_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 
 # ---------------------------------------------------------------------------

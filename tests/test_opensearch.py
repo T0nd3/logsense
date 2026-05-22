@@ -38,6 +38,15 @@ def _make_hit(source: dict, sort_values: list | None = None) -> dict:
     }
 
 
+def _hit(doc_id: str, ts: str, message: str) -> dict:
+    """A hit with an explicit _id — used by the polling tests."""
+    return {
+        "_id": doc_id,
+        "_source": {"@timestamp": ts, "message": message},
+        "sort": [ts, doc_id],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Timestamp parsing
 # ---------------------------------------------------------------------------
@@ -147,6 +156,13 @@ class TestMapHit:
         assert event is not None
         assert event.source == "myserver"
 
+    def test_hit_carries_doc_id(self):
+        # The document _id is needed for realtime polling deduplication
+        hit = _make_hit({"@timestamp": "2026-05-18T10:00:00Z", "message": "x"})
+        event = _map_hit(hit, self._mapping(), index="idx")
+        assert event is not None
+        assert event.parsed_fields["_id"] == "abc123"
+
 
 # ---------------------------------------------------------------------------
 # Query DSL builder
@@ -254,3 +270,84 @@ class TestOpenSearchAdapterPagination:
         )
         events = [e async for e in adapter.events()]
         assert len(events) == 3
+
+
+# ---------------------------------------------------------------------------
+# Realtime polling (mocked client)
+# ---------------------------------------------------------------------------
+
+
+class TestOpenSearchPoll:
+    async def test_poll_dedups_boundary_events(self, mock_opensearch_module):
+        """An event on the timestamp boundary must not be delivered twice."""
+        from logatory.adapters.opensearch import OpenSearchAdapter
+
+        poll1 = [
+            _hit("a", "2026-05-18T10:00:00Z", "ev-a"),
+            _hit("b", "2026-05-18T10:00:01Z", "ev-b"),
+            _hit("c", "2026-05-18T10:00:02Z", "ev-c"),
+        ]
+        poll2 = [
+            _hit("c", "2026-05-18T10:00:02Z", "ev-c"),  # boundary repeat — skip
+            _hit("d", "2026-05-18T10:00:03Z", "ev-d"),  # genuinely new — yield
+        ]
+        mock_client = MagicMock()
+        mock_client.search.side_effect = [
+            {"hits": {"hits": poll1}},
+            {"hits": {"hits": poll2}},
+            {"hits": {"hits": []}},
+        ]
+        mock_opensearch_module.OpenSearch.return_value = mock_client
+
+        adapter = OpenSearchAdapter(host="localhost", port=9200, query=OpenSearchQuery())
+        collected: list[str] = []
+        async for event in adapter.poll(interval=0):
+            collected.append(event.message)
+            if len(collected) >= 4:
+                break
+
+        assert collected == ["ev-a", "ev-b", "ev-c", "ev-d"]
+
+    async def test_poll_continues_through_empty_batches(self, mock_opensearch_module):
+        """An empty poll must not stop the loop."""
+        from logatory.adapters.opensearch import OpenSearchAdapter
+
+        mock_client = MagicMock()
+        mock_client.search.side_effect = [
+            {"hits": {"hits": []}},
+            {"hits": {"hits": [_hit("a", "2026-05-18T10:00:00Z", "ev-a")]}},
+            {"hits": {"hits": []}},
+        ]
+        mock_opensearch_module.OpenSearch.return_value = mock_client
+
+        adapter = OpenSearchAdapter(host="localhost", port=9200, query=OpenSearchQuery())
+        collected: list[str] = []
+        async for event in adapter.poll(interval=0):
+            collected.append(event.message)
+            break
+
+        assert collected == ["ev-a"]
+
+    async def test_poll_advances_cursor_into_next_query(self, mock_opensearch_module):
+        """After a batch, the next query filters gte the latest seen timestamp."""
+        from logatory.adapters.opensearch import OpenSearchAdapter
+
+        mock_client = MagicMock()
+        mock_client.search.side_effect = [
+            {"hits": {"hits": [_hit("a", "2026-05-18T10:00:05Z", "ev-a")]}},
+            {"hits": {"hits": [_hit("b", "2026-05-18T10:00:09Z", "ev-b")]}},
+            {"hits": {"hits": []}},
+        ]
+        mock_opensearch_module.OpenSearch.return_value = mock_client
+
+        adapter = OpenSearchAdapter(host="localhost", port=9200, query=OpenSearchQuery())
+        collected: list[str] = []
+        async for event in adapter.poll(interval=0):
+            collected.append(event.message)
+            if len(collected) >= 2:
+                break
+
+        second_body = mock_client.search.call_args_list[1].kwargs["body"]
+        must = second_body["query"]["bool"]["must"]
+        range_clause = next(c for c in must if "range" in c)
+        assert range_clause["range"]["@timestamp"]["gte"].startswith("2026-05-18T10:00:05")
