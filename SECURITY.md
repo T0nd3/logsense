@@ -6,8 +6,8 @@ directly after parsing.
 
 ## Supported versions
 
-Logatory is in early development (`0.x`, alpha). Security fixes are applied to
-the latest state of `master`.
+Logatory is pre-1.0 (`0.x`, beta). Security fixes are applied to the latest
+state of `master`.
 
 | Version | Supported |
 |---------|-----------|
