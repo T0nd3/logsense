@@ -244,3 +244,30 @@ class TestApiErrors:
         r = seeded.get("/api/errors")
         assert r.status_code == 200
         assert "TimeoutError" in r.text or "fp_test" in r.text
+
+
+class TestApiTopRules:
+    def test_returns_html_partial(self, client: TestClient) -> None:
+        r = client.get("/api/top-rules")
+        assert r.status_code == 200
+        assert "text/html" in r.headers["content-type"]
+
+    def test_empty_db_ok(self, client: TestClient) -> None:
+        r = client.get("/api/top-rules")
+        assert r.status_code == 200
+
+    def test_default_sort_shows_rules(self, seeded: TestClient) -> None:
+        r = seeded.get("/api/top-rules")
+        assert r.status_code == 200
+        assert "SSH_BRUTE" in r.text
+
+    def test_sort_by_severity_orders_critical_first(self, seeded: TestClient) -> None:
+        r = seeded.get("/api/top-rules?sort=severity")
+        assert r.status_code == 200
+        # SSH_BRUTE is CRITICAL, SQL_INJ is HIGH — critical must come first
+        assert r.text.index("SSH_BRUTE") < r.text.index("SQL_INJ")
+
+    def test_invalid_sort_falls_back(self, seeded: TestClient) -> None:
+        r = seeded.get("/api/top-rules?sort=bogus")
+        assert r.status_code == 200
+        assert "SSH_BRUTE" in r.text

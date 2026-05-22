@@ -141,6 +141,12 @@
       font-size: 13px;
     }
 
+    /* ── sortable table headers ─────────────────────────────────────────── */
+    th.th-sort { cursor: pointer; user-select: none; transition: color 0.1s; }
+    th.th-sort:hover { color: var(--text); }
+    th.th-sort-active { color: var(--text); }
+    .sort-caret { color: var(--accent); font-size: 9px; }
+
     /* ── severity badges ────────────────────────────────────────────────── */
     .badge {
       display: inline-block;

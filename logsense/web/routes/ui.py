@@ -23,7 +23,7 @@ def dashboard(
 ) -> HTMLResponse:
     f_summary = f_repo.summary()
     e_summary = e_repo.summary()
-    top_rules = [dict(r) for r in f_repo.count_by_rule(limit=10)]
+    top_rules = [dict(r) for r in f_repo.count_by_rule(limit=10, sort="count")]
     recent = [dict(r) for r in f_repo.recent_findings(since_hours=24)[:10]]
 
     return templates.TemplateResponse(
@@ -34,6 +34,7 @@ def dashboard(
             "f_summary": f_summary,
             "e_summary": e_summary,
             "top_rules": top_rules,
+            "sort": "count",
             "recent": recent,
         },
     )

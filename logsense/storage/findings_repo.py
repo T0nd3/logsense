@@ -154,15 +154,27 @@ class FindingsRepository:
         query += " ORDER BY created_at DESC"
         return self._conn.execute(query, params).fetchall()
 
-    def count_by_rule(self, limit: int = 20) -> list[sqlite3.Row]:
-        """Return (rule_id, severity, count) ordered by count desc."""
+    def count_by_rule(self, limit: int = 20, sort: str = "count") -> list[sqlite3.Row]:
+        """Return (rule_id, severity, count) for the top rules.
+
+        sort="count"    → most frequent first (default)
+        sort="severity" → most severe first (critical → low), then by count
+        """
         assert self._conn
+        if sort == "severity":
+            order_by = (
+                "ORDER BY CASE severity "
+                "WHEN 'critical' THEN 4 WHEN 'high' THEN 3 "
+                "WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END DESC, count DESC"
+            )
+        else:
+            order_by = "ORDER BY count DESC"
         return self._conn.execute(
-            """
+            f"""
             SELECT rule_id, severity, COUNT(*) AS count
               FROM findings
              GROUP BY rule_id, severity
-             ORDER BY count DESC
+             {order_by}
              LIMIT ?
             """,
             (limit,),

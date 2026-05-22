@@ -61,6 +61,23 @@ def api_errors(
     return templates.TemplateResponse(request, "partials/errors_rows.html", {"rows": rows})
 
 
+@router.get("/top-rules", response_class=HTMLResponse)
+def api_top_rules(
+    request: Request,
+    sort: str = "count",
+    templates: Jinja2Templates = Depends(get_templates),
+    f_repo: FindingsRepository = Depends(findings_repo),
+) -> HTMLResponse:
+    """Top findings rules as an HTMX table partial, sortable by count or severity."""
+    sort_key = sort if sort in ("count", "severity") else "count"
+    rows = [dict(r) for r in f_repo.count_by_rule(limit=10, sort=sort_key)]
+    return templates.TemplateResponse(
+        request,
+        "partials/top_rules.html",
+        {"top_rules": rows, "sort": sort_key},
+    )
+
+
 # ---------------------------------------------------------------------------
 # JSON data endpoints
 # ---------------------------------------------------------------------------

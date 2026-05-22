@@ -44,26 +44,9 @@
       <span class="table-title">Top Rules</span>
       <a href="/findings" class="btn btn-ghost btn-sm">All findings</a>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Rule ID</th>
-          <th>Severity</th>
-          <th style="text-align:right">Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in top_rules %}
-        <tr>
-          <td class="mono">{{ r.rule_id }}</td>
-          <td><span class="badge badge-{{ r.severity }}">{{ r.severity }}</span></td>
-          <td style="text-align:right;font-weight:600">{{ r.count }}</td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" class="td-empty">No findings yet — run <code>logsense scan --track-errors</code></td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div id="top-rules">
+      {% include "partials/top_rules.html" %}
+    </div>
   </div>
 </div>
 
