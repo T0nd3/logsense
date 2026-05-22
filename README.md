@@ -6,6 +6,37 @@
 
 **Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
 
+![LogSense web dashboard](docs/dashboard.png)
+
+Or stay in the terminal — format auto-detected, PII redacted, threats flagged:
+
+```text
+$ logsense scan tests/data/auth.log
+------------------------------------------------------------
+  Source   : tests/data/auth.log
+  Format   : auth_log
+  Events   : 7
+  PII hits : 5 (mode: redact)
+  Findings : 1
+------------------------------------------------------------
+
+  Events (7 of 7):
+
+  [    1] 2026-05-18 10:00:01  INFO      Accepted publickey for admin from ip_8390373f port 52341 ssh2
+  [    2] 2026-05-18 10:00:15  WARNING   Failed password for invalid user guest from ip_2bcf3253 port 22 ssh2
+  [    3] 2026-05-18 10:00:16  WARNING   Failed password for invalid user guest from ip_2bcf3253 port 22 ssh2
+  [    4] 2026-05-18 10:00:17  WARNING   Failed password for invalid user guest from ip_2bcf3253 port 22 ssh2
+  [    5] 2026-05-18 10:01:00  INFO      admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/bin/systemctl restart nginx
+  [    6] 2026-05-18 10:01:30  INFO      new user: name=deploy, UID=1002, GID=1002, home=/home/deploy, shell=/bin/bash
+  [    7] 2026-05-18 10:02:00  INFO      Disconnected from ip_8390373f port 52341
+
+  Findings (1):
+
+  [LOW] 2026-05-18 10:01:00  sudo_misuse  Sudo Command to Root: admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/bin/systemctl restart nginx
+```
+
+The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the same IP always maps to the same token, so correlation survives while the raw value never reaches storage. This example is reproducible: the log file ships with the repo.
+
 ---
 
 ## Table of Contents
