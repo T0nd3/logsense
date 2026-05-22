@@ -3,7 +3,7 @@
 If `config.api_token` is None (or empty), authentication is disabled —
 all requests are accepted.  Set a non-empty token to enforce auth.
 
-Token priority: LOG_ANALYZER_API_TOKEN env var > config.yaml `api_token`.
+Token priority: LOGSENSE_API_TOKEN env var > config.yaml `api_token`.
 """
 
 from __future__ import annotations

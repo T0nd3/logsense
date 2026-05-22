@@ -13,9 +13,9 @@ services:
       # - ./config.yaml:/app/config.yaml:ro
     environment:
       # Bearer token for REST API (leave empty to disable auth)
-      - LOG_ANALYZER_API_TOKEN=${LOG_ANALYZER_API_TOKEN:-}
+      - LOGSENSE_API_TOKEN=${LOGSENSE_API_TOKEN:-}
       # PII salt for pseudonymization (set a random secret)
-      - LOG_ANALYZER_PII_SALT=${LOG_ANALYZER_PII_SALT:-}
+      - LOGSENSE_PII_SALT=${LOGSENSE_PII_SALT:-}
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/health')"]

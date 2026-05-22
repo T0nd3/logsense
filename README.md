@@ -527,11 +527,11 @@ db_path: logsense.db        # use /data/logsense.db inside Docker
 pii_rules_path: pii_rules.yaml
 
 # Salt for deterministic PII pseudonymisation
-# Prefer env var LOG_ANALYZER_PII_SALT over storing here
+# Prefer env var LOGSENSE_PII_SALT over storing here
 pii_salt: ""
 
 # REST API Bearer token — leave empty to disable auth (local dev)
-# Prefer env var LOG_ANALYZER_API_TOKEN
+# Prefer env var LOGSENSE_API_TOKEN
 api_token: ""
 
 # Plugin directory — all *.py files here are auto-loaded at startup
@@ -569,8 +569,8 @@ opensearch:
 
 | Variable | Description |
 |---|---|
-| `LOG_ANALYZER_PII_SALT` | Salt for PII pseudonymisation |
-| `LOG_ANALYZER_API_TOKEN` | Bearer token for REST API auth |
+| `LOGSENSE_PII_SALT` | Salt for PII pseudonymisation |
+| `LOGSENSE_API_TOKEN` | Bearer token for REST API auth |
 | `OPENSEARCH_USERNAME` | OpenSearch basic auth username |
 | `OPENSEARCH_PASSWORD` | OpenSearch basic auth password |
 | `OPENSEARCH_API_KEY` | OpenSearch API key (`id:base64key`) |
@@ -826,7 +826,7 @@ Interactive docs: `/api/docs`
 
 **Authentication**
 
-Set `api_token` in `config.yaml` or via `LOG_ANALYZER_API_TOKEN`. Pass it as:
+Set `api_token` in `config.yaml` or via `LOGSENSE_API_TOKEN`. Pass it as:
 
 ```
 Authorization: Bearer <token>
@@ -859,8 +859,8 @@ The stack starts LogSense on port `8080` with a named volume for the SQLite data
 
 ```bash
 # docker-compose.yml (or .env file)
-LOG_ANALYZER_API_TOKEN=change-me-in-production
-LOG_ANALYZER_PII_SALT=a-long-random-string
+LOGSENSE_API_TOKEN=change-me-in-production
+LOGSENSE_PII_SALT=a-long-random-string
 ```
 
 ### Build and run manually
@@ -871,8 +871,8 @@ docker build -t logsense .
 docker run -d \
   -p 8080:8080 \
   -v logsense-data:/data \
-  -e LOG_ANALYZER_API_TOKEN=mytoken \
-  -e LOG_ANALYZER_PII_SALT=mysalt \
+  -e LOGSENSE_API_TOKEN=mytoken \
+  -e LOGSENSE_PII_SALT=mysalt \
   logsense
 ```
 

@@ -95,9 +95,9 @@ class Config:
             embed_provider=llm_data.get("embed_provider"),
         )
 
-        salt = os.environ.get("LOG_ANALYZER_PII_SALT") or data.get("pii_salt", "")
+        salt = os.environ.get("LOGSENSE_PII_SALT") or data.get("pii_salt", "")
 
-        api_token = os.environ.get("LOG_ANALYZER_API_TOKEN") or data.get("api_token") or None
+        api_token = os.environ.get("LOGSENSE_API_TOKEN") or data.get("api_token") or None
 
         return cls(
             llm=llm,
