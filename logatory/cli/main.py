@@ -23,6 +23,7 @@ from logatory.cli._types import REDACT_MAP, RedactModeArg
 from logatory.cli.anomaly_cmd import app as anomaly_app
 from logatory.cli.colors import SEVERITY_COLOR
 from logatory.cli.demo_cmd import app as demo_app
+from logatory.cli.docker_cmd import app as docker_app
 from logatory.cli.errors_cmd import app as errors_app
 from logatory.cli.export_cmd import app as export_app
 from logatory.cli.findings_cmd import app as findings_app
@@ -51,6 +52,7 @@ app.command("serve")(serve_cmd.serve)
 rules_app = typer.Typer(help="Manage detection rules.")
 app.add_typer(rules_app, name="rules")
 app.add_typer(opensearch_app, name="opensearch")
+app.add_typer(docker_app, name="docker")
 app.add_typer(errors_app, name="errors")
 app.add_typer(findings_app, name="findings")
 app.add_typer(anomaly_app, name="anomaly")

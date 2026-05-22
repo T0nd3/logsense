@@ -41,6 +41,7 @@ Issues = "https://github.com/T0nd3/logatory/issues"
 [project.optional-dependencies]
 evtx = ["python-evtx>=0.7"]
 opensearch = ["opensearch-py>=2.6"]
+docker = ["docker>=7.0"]
 claude = ["anthropic>=0.40"]
 embed = ["chromadb>=0.5"]
 web = [

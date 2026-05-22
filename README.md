@@ -128,6 +128,7 @@ Includes: file scanning, PII redaction, rule engine, anomaly detection, findings
 
 ```bash
 pip install 'logatory[web]'         # web dashboard + REST API (FastAPI, uvicorn, Jinja2)
+pip install 'logatory[docker]'      # read logs from local Docker containers
 pip install 'logatory[opensearch]'  # OpenSearch / Elasticsearch integration
 pip install 'logatory[evtx]'        # Windows Event Log (.evtx) support
 pip install 'logatory[claude]'      # Anthropic Claude API
@@ -137,7 +138,7 @@ pip install 'logatory[embed]'       # ChromaDB for RAG (llm ask command)
 Install everything:
 
 ```bash
-pip install 'logatory[web,opensearch,evtx,claude,embed]'
+pip install 'logatory[web,docker,opensearch,evtx,claude,embed]'
 ```
 
 ### Shell auto-completion
@@ -204,29 +205,27 @@ logatory scan /var/log/auth.log --track-errors --explain-findings
 ### Docker container logs
 
 No log aggregation stack (ELK, Loki, Graylog) required — if your services
-run in Docker, pipe their logs straight into Logatory:
+run in Docker, Logatory reads their logs straight from the daemon. Install
+the optional dependency and use the native `docker` command:
 
 ```bash
-# A single container
-docker logs my-service | logatory scan -
+pip install 'logatory[docker]'
 
-# A whole Compose project, with error tracking
-docker compose logs --no-color | logatory scan - --track-errors
+# Scan all running containers
+logatory docker scan
 
-# Follow a container in real time
-docker logs -f my-service | logatory scan -
+# One container, by name; persist errors
+logatory docker scan --name my-service --track-errors
+
+# Filter by label, include stopped containers
+logatory docker scan --label app=web --all
 ```
 
-Docker stores container logs as files on the host, so you can also point
-the file scanner at them directly (needs root):
+Each event is auto-detected per container (JSON, Nginx, plaintext, …),
+PII-redacted, and tagged with its container name.
 
-```bash
-logatory scan '/var/lib/docker/containers/*/*-json.log'
-```
-
-> A native Docker source adapter — auto-discovering containers, tagging each
-> event with its container name, and following them like `tail` — is planned.
-> The pipe above is the supported workflow until then.
+> Realtime follow (`logatory docker tail`) is on the way. Until then, for a
+> single container you can pipe: `docker logs -f my-service | logatory scan -`.
 
 ---
 
