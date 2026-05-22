@@ -14,12 +14,14 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
+import yaml
 
 from logatory.adapters.base import SourceAdapter
 from logatory.cli._types import REDACT_MAP, RedactModeArg
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
 from logatory.fleet import (
+    TYPE_FIELDS,
     Target,
     TargetConfigError,
     build_adapter,
@@ -536,3 +538,101 @@ def fleet_tail(
     if alert_webhook:
         typer.echo(f"  Webhooks : {counts['webhooks']:,} sent")
     typer.echo(sep)
+
+
+# ---------------------------------------------------------------------------
+# fleet init
+# ---------------------------------------------------------------------------
+
+
+def _prompt_type() -> str:
+    """Prompt for a target type, re-asking until a known type is given."""
+    typer.echo("    Types: " + ", ".join(sorted(TYPE_FIELDS)))
+    while True:
+        choice = typer.prompt("    Type").strip().lower()
+        if choice in TYPE_FIELDS:
+            return choice
+        typer.echo(typer.style(f"    unknown type '{choice}'", fg=typer.colors.RED))
+
+
+def _prompt_field(field, env_vars: set[str]):
+    """Prompt for one target field; returns the value to store, or None to omit."""
+    if field.kind == "bool":
+        return True if typer.confirm(f"    {field.label}", default=False) else None
+    if field.kind == "secret":
+        var = typer.prompt(
+            f"    {field.label} — environment variable name (empty to skip)", default=""
+        ).strip()
+        if not var:
+            return None
+        env_vars.add(var)
+        return f"${{{var}}}"
+    value = typer.prompt(f"    {field.label}", default=field.default).strip()
+    while field.required and not value:
+        value = typer.prompt(f"    {field.label} (required)").strip()
+    return value or None
+
+
+@app.command("init")
+def fleet_init(
+    output: Annotated[Path, typer.Option("--output", "-o", help="Targets file to write.")] = Path(
+        "targets.yaml"
+    ),
+    force: Annotated[
+        bool, typer.Option("--force", help="Overwrite an existing targets file.")
+    ] = False,
+) -> None:
+    """Interactively build a fleet targets file.
+
+    Prompts for one target at a time — name, type, and that type's fields —
+    and writes a targets.yaml. Credentials are stored as ${ENV_VAR}
+    references, never as plain values.
+    """
+    if output.exists() and not force:
+        typer.echo(f"Error: {output} already exists — use --force to overwrite.", err=True)
+        raise typer.Exit(1)
+
+    typer.echo("\n  Build a fleet targets file. Answer the prompts for each target.")
+
+    entries: list[dict] = []
+    env_vars: set[str] = set()
+    names: set[str] = set()
+
+    while True:
+        typer.echo(f"\n  Target #{len(entries) + 1}")
+        name = typer.prompt("    Target name").strip()
+        while not name or name in names:
+            reason = "a name is required" if not name else f"'{name}' is already used"
+            typer.echo(typer.style(f"    {reason}", fg=typer.colors.RED))
+            name = typer.prompt("    Target name").strip()
+        names.add(name)
+
+        ttype = _prompt_type()
+
+        params: dict = {}
+        for field in TYPE_FIELDS[ttype]:
+            value = _prompt_field(field, env_vars)
+            if value is not None:
+                params[field.name] = value
+
+        groups_raw = typer.prompt("    Groups — comma-separated (optional)", default="").strip()
+        groups = [g.strip() for g in groups_raw.split(",") if g.strip()]
+
+        entry: dict = {"name": name, "type": ttype}
+        if groups:
+            entry["groups"] = groups
+        entry.update(params)
+        entries.append(entry)
+
+        if not typer.confirm("\n  Add another target?", default=False):
+            break
+
+    output.write_text(
+        yaml.safe_dump({"targets": entries}, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    typer.echo(f"\n  Wrote {len(entries)} target(s) to {output}")
+    if env_vars:
+        typer.echo("  Set these environment variables before running fleet commands:")
+        for var in sorted(env_vars):
+            typer.echo(f"    export {var}=...")
