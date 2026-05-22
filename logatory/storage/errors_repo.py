@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .errors_schema import ERRORS_SCHEMA_SQL
-from .schema import SCHEMA_SQL
+from .schema import SCHEMA_SQL, ensure_column
 
 
 class ErrorsRepository:
@@ -19,6 +19,10 @@ class ErrorsRepository:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA_SQL)
         self._conn.executescript(ERRORS_SCHEMA_SQL)
+        ensure_column(self._conn, "error_occurrences", "target", "TEXT")
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_occ_target ON error_occurrences(target)"
+        )
 
     def close(self) -> None:
         if self._conn:
@@ -47,6 +51,7 @@ class ErrorsRepository:
         sample: str,
         stack_trace: str | None = None,
         stack_lang: str | None = None,
+        target: str | None = None,
     ) -> sqlite3.Row:
         assert self._conn
         ts = timestamp.isoformat()
@@ -80,10 +85,11 @@ class ErrorsRepository:
 
         self._conn.execute(
             """
-            INSERT INTO error_occurrences (fingerprint, timestamp, source, sample, stack_trace, stack_lang)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO error_occurrences
+                (fingerprint, timestamp, source, sample, stack_trace, stack_lang, target)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (fingerprint, ts, source, sample[:500], stack_trace, stack_lang),
+            (fingerprint, ts, source, sample[:500], stack_trace, stack_lang, target),
         )
         self._conn.commit()
 

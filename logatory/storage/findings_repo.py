@@ -8,7 +8,7 @@ from logatory.models import Finding
 
 from .errors_schema import ERRORS_SCHEMA_SQL
 from .findings_schema import FINDINGS_SCHEMA_SQL
-from .schema import SCHEMA_SQL
+from .schema import SCHEMA_SQL, ensure_column
 
 # Severity order for min-severity filtering
 _SEV_ORDER: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
@@ -40,6 +40,8 @@ class FindingsRepository:
         self._conn.executescript(SCHEMA_SQL)
         self._conn.executescript(ERRORS_SCHEMA_SQL)
         self._conn.executescript(FINDINGS_SCHEMA_SQL)
+        ensure_column(self._conn, "findings", "target", "TEXT")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_findings_target ON findings(target)")
 
     def close(self) -> None:
         if self._conn:
@@ -68,13 +70,15 @@ class FindingsRepository:
         for f in findings:
             ts = f.timestamp.isoformat()
             raw = f.events[0].raw[:500] if f.events else None
+            target = f.events[0].parsed_fields.get("target") if f.events else None
             cur = self._conn.execute(
                 """
                 INSERT OR IGNORE INTO findings
-                    (rule_id, source, event_timestamp, severity, message, raw_event, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (rule_id, source, event_timestamp, severity, message,
+                     raw_event, created_at, target)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (f.rule_id, f.source, ts, f.severity.value, f.message[:500], raw, now),
+                (f.rule_id, f.source, ts, f.severity.value, f.message[:500], raw, now, target),
             )
             inserted += cur.rowcount
         self._conn.commit()

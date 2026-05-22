@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS error_occurrences (
     source       TEXT,
     sample       TEXT NOT NULL,
     stack_trace  TEXT,
-    stack_lang   TEXT
+    stack_lang   TEXT,
+    target       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_errors_last_seen  ON errors(last_seen DESC);

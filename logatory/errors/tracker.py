@@ -42,4 +42,5 @@ class ErrorTracker:
             sample=msg[:500],
             stack_trace=stack,
             stack_lang=stack_lang,
+            target=event.parsed_fields.get("target"),
         )

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS findings (
     message         TEXT NOT NULL,
     raw_event       TEXT,
     created_at      TEXT NOT NULL,
+    target          TEXT,
     UNIQUE (rule_id, source, event_timestamp)
 );
 
