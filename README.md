@@ -57,6 +57,8 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
   - [anomaly](#anomaly)
   - [llm](#llm)
   - [opensearch](#opensearch)
+  - [loki](#loki)
+  - [graylog](#graylog)
   - [export](#export)
   - [demo](#demo)
 - [Configuration](#configuration)
@@ -88,6 +90,8 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 | **systemd journal** | Read logs straight from journald via `journalctl` — scan history or follow live |
 | **Docker logs** | Read container logs straight from the Docker daemon — scan or follow, no log stack required |
 | **Remote over SSH** | Pull logs from any SSH-reachable host — no agent on the remote box; scan or follow live with auto-reconnect |
+| **Grafana Loki** | Query a Loki instance with LogQL — scan or follow live |
+| **Graylog** | Query a Graylog server via its search API — scan or follow live |
 | **Finding persistence** | SQLite store for HIGH/CRITICAL findings with retention, dedup, severity filtering |
 | **FP suppression** | Dismiss rules globally or per source file; reversible |
 | **Markdown export** | Automated security reports from the SQLite database |
@@ -576,6 +580,52 @@ logatory opensearch info
 # Run detection rules on the last 2 hours of logs
 logatory opensearch scan --index "logstash-*" --since 2h --track-errors
 ```
+
+---
+
+### loki
+
+Query and analyse logs from a [Grafana Loki](https://grafana.com/oss/loki/)
+instance. No extra dependency — Loki is reached over plain HTTP.
+
+```bash
+# Scan the last hour, filtered by a LogQL stream selector
+logatory loki scan --url http://loki:3100 --query '{job="nginx"}' --since 1h
+
+# Multi-tenant Loki, with a bearer token
+logatory loki scan --query '{namespace="prod"}' --token "$LOKI_TOKEN" --org-id team-a
+
+# Follow Loki in real time (Ctrl+C to stop)
+logatory loki tail --query '{job="app"}' --alert-webhook https://hooks.example/logs
+```
+
+Each Loki log line is run through format detection and parsing, just like a
+local file. `loki tail` polls `query_range` and resumes from Loki's
+nanosecond timestamp, so polls neither drop nor repeat entries. Credentials
+can be supplied via `LOKI_USERNAME` / `LOKI_PASSWORD` / `LOKI_TOKEN`.
+
+---
+
+### graylog
+
+Query and analyse logs from a [Graylog](https://graylog.org/) server via its
+universal search API. No extra dependency — Graylog is reached over HTTP.
+
+```bash
+# Scan the last hour with an access token
+logatory graylog scan --url http://graylog:9000 --token "$GRAYLOG_TOKEN" --since 1h
+
+# Filter with a Graylog search query
+logatory graylog scan --query 'source:web01 AND level:<=3' --track-errors
+
+# Follow Graylog in real time (Ctrl+C to stop)
+logatory graylog tail --query '*' --alert-webhook https://hooks.example/logs
+```
+
+Graylog messages keep their structured fields (source, level, timestamp).
+`graylog tail` polls the search API and skips already-seen messages by id.
+Authenticate with a Graylog access token (`GRAYLOG_TOKEN`) or with
+`GRAYLOG_USERNAME` / `GRAYLOG_PASSWORD`.
 
 ---
 

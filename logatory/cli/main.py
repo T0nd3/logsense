@@ -27,8 +27,10 @@ from logatory.cli.docker_cmd import app as docker_app
 from logatory.cli.errors_cmd import app as errors_app
 from logatory.cli.export_cmd import app as export_app
 from logatory.cli.findings_cmd import app as findings_app
+from logatory.cli.graylog_cmd import app as graylog_app
 from logatory.cli.journald_cmd import app as journald_app
 from logatory.cli.llm_cmd import app as llm_app
+from logatory.cli.loki_cmd import app as loki_app
 from logatory.cli.opensearch_cmd import app as opensearch_app
 from logatory.cli.ssh_cmd import app as ssh_app
 from logatory.config import Config
@@ -57,6 +59,8 @@ app.add_typer(opensearch_app, name="opensearch")
 app.add_typer(docker_app, name="docker")
 app.add_typer(journald_app, name="journald")
 app.add_typer(ssh_app, name="ssh")
+app.add_typer(loki_app, name="loki")
+app.add_typer(graylog_app, name="graylog")
 app.add_typer(errors_app, name="errors")
 app.add_typer(findings_app, name="findings")
 app.add_typer(anomaly_app, name="anomaly")
