@@ -6,7 +6,7 @@
 
 **Local log analysis with PII redaction, rule-based threat detection, anomaly detection, LLM-powered insights, and a web dashboard — all running on your machine, no data leaves your infrastructure by default.**
 
-![Logatory web dashboard](docs/dashboard.png)
+![Logatory web dashboard](https://raw.githubusercontent.com/T0nd3/logatory/master/docs/dashboard.png)
 
 Or stay in the terminal — format auto-detected, PII redacted, threats flagged:
 
