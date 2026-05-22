@@ -95,7 +95,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 
 ```bash
 # Install (core only — no external dependencies beyond PyYAML and typer)
-pip install .
+pip install logatory
 
 # Scan a log file
 logatory scan /var/log/syslog
@@ -104,7 +104,7 @@ logatory scan /var/log/syslog
 logatory tail /var/log/nginx/access.log
 
 # Start the web dashboard
-pip install '.[web]'
+pip install 'logatory[web]'
 logatory serve
 ```
 
@@ -119,7 +119,7 @@ That's it. Open `http://localhost:8080` in your browser.
 ### Core only
 
 ```bash
-pip install .
+pip install logatory
 ```
 
 Includes: file scanning, PII redaction, rule engine, anomaly detection, findings persistence, Markdown export, plugin system.
@@ -127,17 +127,17 @@ Includes: file scanning, PII redaction, rule engine, anomaly detection, findings
 ### Optional feature sets
 
 ```bash
-pip install '.[web]'         # web dashboard + REST API (FastAPI, uvicorn, Jinja2)
-pip install '.[opensearch]'  # OpenSearch / Elasticsearch integration
-pip install '.[evtx]'        # Windows Event Log (.evtx) support
-pip install '.[claude]'      # Anthropic Claude API
-pip install '.[embed]'       # ChromaDB for RAG (llm ask command)
+pip install 'logatory[web]'         # web dashboard + REST API (FastAPI, uvicorn, Jinja2)
+pip install 'logatory[opensearch]'  # OpenSearch / Elasticsearch integration
+pip install 'logatory[evtx]'        # Windows Event Log (.evtx) support
+pip install 'logatory[claude]'      # Anthropic Claude API
+pip install 'logatory[embed]'       # ChromaDB for RAG (llm ask command)
 ```
 
 Install everything:
 
 ```bash
-pip install '.[web,opensearch,evtx,claude,embed]'
+pip install 'logatory[web,opensearch,evtx,claude,embed]'
 ```
 
 ### Shell auto-completion
@@ -270,7 +270,7 @@ logatory tail /var/log/auth.log --from-start --no-rules
 
 ### serve
 
-Start the Logatory web dashboard (requires `pip install '.[web]'`).
+Start the Logatory web dashboard (requires `pip install 'logatory[web]'`).
 
 ```bash
 logatory serve [OPTIONS]
@@ -486,7 +486,7 @@ logatory llm summarize --since 24h
 Ask questions about your findings and errors using RAG over the local SQLite database:
 
 ```bash
-# Build the vector index first (requires pip install '.[embed]')
+# Build the vector index first (requires pip install 'logatory[embed]')
 logatory llm index
 
 # Then ask freely
@@ -849,7 +849,7 @@ export LLM_API_KEY=sk-...
 
 ## Web Dashboard & REST API
 
-Start the server (requires `pip install '.[web]'`):
+Start the server (requires `pip install 'logatory[web]'`):
 
 ```bash
 logatory serve --port 8080
