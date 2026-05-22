@@ -6,13 +6,13 @@ directly after parsing.
 
 ## Supported versions
 
-Logatory is in early development (`0.1.x`, alpha). Security fixes are applied to
+Logatory is in early development (`0.x`, alpha). Security fixes are applied to
 the latest state of `master`.
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅        |
-| < 0.1   | ❌        |
+| latest `0.x` | ✅   |
+| older        | ❌   |
 
 ## Reporting a vulnerability
 
