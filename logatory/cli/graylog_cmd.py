@@ -10,7 +10,7 @@ from typing import Annotated, Optional
 import typer
 
 from logatory.adapters.graylog import GraylogAdapter
-from logatory.cli._types import REDACT_MAP, RedactModeArg
+from logatory.cli._types import REDACT_MAP, RedactModeArg, parse_lookback_seconds
 from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
@@ -27,16 +27,6 @@ from logatory.storage.findings_repo import FindingsRepository, meets_min_severit
 from logatory.tail_helpers import meets_alert_severity, post_webhook
 
 app = typer.Typer(help="Analyze logs from a Graylog server.")
-
-_LOOKBACK_RE = re.compile(r"^(\d+)([smhd])$")
-_UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
-
-
-def _lookback_seconds(spec: str) -> int:
-    m = _LOOKBACK_RE.match(spec.strip())
-    if not m:
-        raise typer.BadParameter(f"Invalid time spec '{spec}'. Use e.g. 30s, 5m, 1h, 7d.")
-    return int(m.group(1)) * _UNIT_SECONDS[m.group(2)]
 
 
 def _print_finding(finding: Finding) -> None:
@@ -121,7 +111,7 @@ def graylog_scan(
         adapter = GraylogAdapter(
             url=url,
             query=query,
-            range_seconds=_lookback_seconds(since),
+            range_seconds=parse_lookback_seconds(since),
             limit=lines,
             username=username,
             password=password,
@@ -274,7 +264,7 @@ def graylog_tail(
         adapter = GraylogAdapter(
             url=url,
             query=query,
-            range_seconds=_lookback_seconds(since),
+            range_seconds=parse_lookback_seconds(since),
             limit=lines,
             username=username,
             password=password,

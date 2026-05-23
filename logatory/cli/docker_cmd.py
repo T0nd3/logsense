@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import re
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
 
 from logatory.adapters.docker import DockerAdapter
-from logatory.cli._types import REDACT_MAP, RedactModeArg
+from logatory.cli._types import REDACT_MAP, RedactModeArg, parse_lookback_utc
 from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
@@ -155,18 +154,6 @@ def _print_finding(finding: Finding) -> None:
     typer.echo(typer.style(line, fg=color))
 
 
-_LOOKBACK_RE = re.compile(r"^(\d+)([smhd])$")
-_UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
-
-
-def _parse_lookback(spec: str) -> datetime:
-    """Convert a relative spec like '5m' / '1h' to an absolute UTC datetime."""
-    m = _LOOKBACK_RE.match(spec.strip())
-    if not m:
-        raise typer.BadParameter(f"Invalid time spec '{spec}'. Use e.g. 30s, 5m, 1h.")
-    return datetime.now(tz=UTC) - timedelta(seconds=int(m.group(1)) * _UNIT_SECONDS[m.group(2)])
-
-
 @app.command("tail")
 def docker_tail(
     name: Annotated[
@@ -207,7 +194,7 @@ def docker_tail(
     started later are picked up automatically. Runs until Ctrl+C.
     """
     cfg = Config.load(config)
-    lookback = _parse_lookback(since)
+    lookback = parse_lookback_utc(since)
 
     plugin_registry = load_plugins(cfg.plugins_dir)
     plugin_pii = [
