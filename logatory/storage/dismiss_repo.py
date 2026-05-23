@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import UTC, datetime
-from pathlib import Path
 
+from .base import SqliteRepository
 from .dismiss_schema import DISMISS_SCHEMA_SQL
-from .schema import SCHEMA_SQL
 
 # Sentinel meaning "any source" — stored as empty string so UNIQUE works
 _ANY = ""
 
 
-class DismissRepository:
+class DismissRepository(SqliteRepository):
     """Persist dismissed rule_id / source pairs to SQLite.
 
     A dismissed entry suppresses *all* future findings that match:
@@ -23,27 +21,7 @@ class DismissRepository:
     Use `source=None` to dismiss a rule globally (all sources).
     """
 
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
-        self._conn: sqlite3.Connection | None = None
-
-    def open(self) -> None:
-        self._conn = sqlite3.connect(self._db_path)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(SCHEMA_SQL)
-        self._conn.executescript(DISMISS_SCHEMA_SQL)
-
-    def close(self) -> None:
-        if self._conn:
-            self._conn.close()
-            self._conn = None
-
-    def __enter__(self) -> DismissRepository:
-        self.open()
-        return self
-
-    def __exit__(self, *_) -> None:
-        self.close()
+    _schemas = (DISMISS_SCHEMA_SQL,)
 
     # ------------------------------------------------------------------
     # Write

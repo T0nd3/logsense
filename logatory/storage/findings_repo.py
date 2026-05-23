@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 from logatory.models import Finding, finding_severity_level
 
+from .base import SqliteRepository
 from .errors_schema import ERRORS_SCHEMA_SQL
 from .findings_schema import FINDINGS_SCHEMA_SQL
-from .schema import SCHEMA_SQL, ensure_column
+from .schema import ensure_column
 
 
 def meets_min_severity(finding: Finding, min_severity: str) -> bool:
@@ -18,41 +18,18 @@ def meets_min_severity(finding: Finding, min_severity: str) -> bool:
     return finding.severity.level >= finding_severity_level(min_severity, default=2)
 
 
-class FindingsRepository:
+class FindingsRepository(SqliteRepository):
     """Persist rule-engine and anomaly findings to SQLite.
 
     Uses INSERT OR IGNORE with a UNIQUE(rule_id, source, event_timestamp)
     constraint so that re-scanning the same log file never produces duplicates.
     """
 
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
-        self._conn: sqlite3.Connection | None = None
+    _schemas = (ERRORS_SCHEMA_SQL, FINDINGS_SCHEMA_SQL)
 
-    # ------------------------------------------------------------------
-    # Context-manager / lifecycle
-    # ------------------------------------------------------------------
-
-    def open(self) -> None:
-        self._conn = sqlite3.connect(self._db_path)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(SCHEMA_SQL)
-        self._conn.executescript(ERRORS_SCHEMA_SQL)
-        self._conn.executescript(FINDINGS_SCHEMA_SQL)
-        ensure_column(self._conn, "findings", "target", "TEXT")
-        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_findings_target ON findings(target)")
-
-    def close(self) -> None:
-        if self._conn:
-            self._conn.close()
-            self._conn = None
-
-    def __enter__(self) -> FindingsRepository:
-        self.open()
-        return self
-
-    def __exit__(self, *_) -> None:
-        self.close()
+    def _migrate(self, conn: sqlite3.Connection) -> None:
+        ensure_column(conn, "findings", "target", "TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_findings_target ON findings(target)")
 
     # ------------------------------------------------------------------
     # Write

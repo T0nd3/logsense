@@ -3,38 +3,18 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
+from .base import SqliteRepository
 from .errors_schema import ERRORS_SCHEMA_SQL
-from .schema import SCHEMA_SQL, ensure_column
+from .schema import ensure_column
 
 
-class ErrorsRepository:
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
-        self._conn: sqlite3.Connection | None = None
+class ErrorsRepository(SqliteRepository):
+    _schemas = (ERRORS_SCHEMA_SQL,)
 
-    def open(self) -> None:
-        self._conn = sqlite3.connect(self._db_path)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(SCHEMA_SQL)
-        self._conn.executescript(ERRORS_SCHEMA_SQL)
-        ensure_column(self._conn, "error_occurrences", "target", "TEXT")
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_occ_target ON error_occurrences(target)"
-        )
-
-    def close(self) -> None:
-        if self._conn:
-            self._conn.close()
-            self._conn = None
-
-    def __enter__(self) -> ErrorsRepository:
-        self.open()
-        return self
-
-    def __exit__(self, *_) -> None:
-        self.close()
+    def _migrate(self, conn: sqlite3.Connection) -> None:
+        ensure_column(conn, "error_occurrences", "target", "TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_occ_target ON error_occurrences(target)")
 
     # ------------------------------------------------------------------
     # Upsert

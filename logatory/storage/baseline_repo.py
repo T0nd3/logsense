@@ -1,41 +1,18 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from datetime import UTC, datetime
-from pathlib import Path
 
 from ..anomaly.baseline import BaselineStats, FeatureStat
+from .base import SqliteRepository
 from .baseline_schema import BASELINE_SCHEMA_SQL
 from .errors_schema import ERRORS_SCHEMA_SQL
-from .schema import SCHEMA_SQL
 
 
-class BaselineRepository:
+class BaselineRepository(SqliteRepository):
     """Persist anomaly detection baseline data in SQLite."""
 
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
-        self._conn: sqlite3.Connection | None = None
-
-    def open(self) -> None:
-        self._conn = sqlite3.connect(self._db_path)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(SCHEMA_SQL)
-        self._conn.executescript(ERRORS_SCHEMA_SQL)
-        self._conn.executescript(BASELINE_SCHEMA_SQL)
-
-    def close(self) -> None:
-        if self._conn:
-            self._conn.close()
-            self._conn = None
-
-    def __enter__(self) -> BaselineRepository:
-        self.open()
-        return self
-
-    def __exit__(self, *_) -> None:
-        self.close()
+    _schemas = (ERRORS_SCHEMA_SQL, BASELINE_SCHEMA_SQL)
 
     # ------------------------------------------------------------------
     # Observations (raw bucket feature vectors)
