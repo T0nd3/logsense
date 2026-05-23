@@ -11,6 +11,7 @@ import typer
 
 from logatory.adapters.graylog import GraylogAdapter
 from logatory.cli._types import REDACT_MAP, RedactModeArg
+from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
 from logatory.models import Event, Finding
@@ -28,13 +29,6 @@ _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(help="Analyze logs from a Graylog server.")
 
-_SEVERITY_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
-
 _LOOKBACK_RE = re.compile(r"^(\d+)([smhd])$")
 _UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
 
@@ -47,7 +41,7 @@ def _lookback_seconds(spec: str) -> int:
 
 
 def _print_finding(finding: Finding) -> None:
-    color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+    color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
     ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     line = f"  [{finding.severity.value.upper()}] {ts}  {finding.rule_id}  {finding.message}"
     typer.echo(typer.style(line, fg=color))

@@ -22,6 +22,7 @@ import yaml
 
 from logatory.adapters.base import SourceAdapter
 from logatory.cli._types import REDACT_MAP, RedactModeArg
+from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
 from logatory.fleet import (
@@ -46,13 +47,6 @@ from logatory.tail_helpers import meets_alert_severity, post_webhook
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(help="Analyze logs from multiple configured targets — a fleet.")
-
-_SEVERITY_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
 
 
 @app.callback()
@@ -150,7 +144,7 @@ def _print_events(events: list[Event], limit: int, show_all: bool) -> None:
 
 
 def _print_finding(target_name: str, finding: Finding) -> None:
-    color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+    color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
     ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     line = (
         f"  [{finding.severity.value.upper()}] {ts}  {target_name}  "

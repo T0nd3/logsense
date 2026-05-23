@@ -12,6 +12,7 @@ import typer
 
 from logatory.adapters.docker import DockerAdapter
 from logatory.cli._types import REDACT_MAP, RedactModeArg
+from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
 from logatory.models import Event, Finding
@@ -28,13 +29,6 @@ from logatory.tail_helpers import meets_alert_severity, post_webhook
 _BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(help="Analyze logs from local Docker containers — no log stack needed.")
-
-_SEVERITY_COLOR = {
-    "low": typer.colors.CYAN,
-    "medium": typer.colors.YELLOW,
-    "high": typer.colors.RED,
-    "critical": typer.colors.BRIGHT_RED,
-}
 
 
 @app.command("scan")
@@ -139,7 +133,7 @@ def docker_scan(
     if findings:
         typer.echo(f"\n  Findings ({len(findings)}):\n")
         for finding in findings:
-            color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+            color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
             ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
             line = (
                 f"  [{finding.severity.value.upper()}] {ts}  {finding.rule_id}  {finding.message}"
@@ -156,7 +150,7 @@ def docker_scan(
 
 
 def _print_finding(finding: Finding) -> None:
-    color = _SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
+    color = SEVERITY_COLOR.get(finding.severity.value, typer.colors.WHITE)
     ts = finding.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     line = f"  [{finding.severity.value.upper()}] {ts}  {finding.rule_id}  {finding.message}"
     typer.echo(typer.style(line, fg=color))
