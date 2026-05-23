@@ -72,6 +72,7 @@ The IP addresses above (`ip_8390373f`, …) are deterministic pseudonyms — the
 - [Web Dashboard & REST API](#web-dashboard--rest-api)
 - [Docker](#docker)
 - [Contributing](#contributing)
+- [Sponsoring & Enterprise](#sponsoring--enterprise)
 
 ---
 
@@ -1152,3 +1153,25 @@ submit changes.
 
 Security issues: please follow the **[Security Policy](SECURITY.md)** — do not
 open a public issue.
+
+---
+
+## Sponsoring & Enterprise
+
+Logatory is Apache-2.0 and free for any use, including commercial. The
+single-user mode — CLI, local web dashboard, REST API, all detection and LLM
+features — is the open-source core and will stay open source.
+
+A **multi-user server** with RBAC, SSO/OIDC and shared dashboards is planned as
+a commercial offering for teams and organisations that need centralised access.
+If that — or any of the below — sounds relevant, please reach out:
+
+- Multi-user deployment with shared findings and per-user views
+- SSO / OIDC integration for team or enterprise rollout
+- Priority support or a feature you need for production use
+- Sponsoring development of a specific adapter or detection ruleset
+- Commercial / air-gapped licensing for regulated environments
+
+**Contact:** [benjamin.faeuster@web.de](mailto:benjamin.faeuster@web.de)
+
+No sales pipeline — just an email asking what you need.
