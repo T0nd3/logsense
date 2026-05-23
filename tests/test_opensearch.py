@@ -351,3 +351,34 @@ class TestOpenSearchPoll:
         must = second_body["query"]["bool"]["must"]
         range_clause = next(c for c in must if "range" in c)
         assert range_clause["range"]["@timestamp"]["gte"].startswith("2026-05-18T10:00:05")
+
+    async def test_poll_without_id_yields_every_event(self, mock_opensearch_module):
+        """Documents the dedup contract: hits without an ``_id`` bypass the
+        seen-ids cache and are delivered on every poll that returns them.
+
+        OpenSearch always assigns an ``_id``, so in practice this only
+        bites custom mappings that strip it. Locking the behaviour here
+        so a future "always dedup" tweak shows up as a failing test."""
+        from logatory.adapters.opensearch import OpenSearchAdapter
+
+        hit_no_id = {
+            "_source": {"@timestamp": "2026-05-18T10:00:00Z", "message": "ev-x"},
+            "sort": ["2026-05-18T10:00:00Z"],
+        }
+        mock_client = MagicMock()
+        mock_client.search.side_effect = [
+            {"hits": {"hits": [hit_no_id]}},
+            {"hits": {"hits": [hit_no_id]}},  # same event again — no dedup
+            {"hits": {"hits": []}},
+        ]
+        mock_opensearch_module.OpenSearch.return_value = mock_client
+
+        adapter = OpenSearchAdapter(host="localhost", port=9200, query=OpenSearchQuery())
+        collected: list[str] = []
+        async for event in adapter.poll(interval=0):
+            collected.append(event.message)
+            if len(collected) >= 2:
+                break
+
+        # Both deliveries arrive — no _id means no dedup.
+        assert collected == ["ev-x", "ev-x"]

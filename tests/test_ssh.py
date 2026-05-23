@@ -74,6 +74,28 @@ class _StreamRunner:
         return _ait(lines)
 
 
+async def _aiter_raise(message: str) -> AsyncIterator[str]:
+    """An async iterator that raises ``RuntimeError`` on the first step.
+
+    Mirrors how the real ssh stream surfaces a failed connection — control
+    flows into ``poll()``'s ``async for`` before any line arrives.
+    """
+    raise RuntimeError(message)
+    yield  # pragma: no cover — makes this an async generator
+
+
+class _FailingStreamRunner:
+    """A stream_runner whose iterator raises on every connection attempt."""
+
+    def __init__(self, message: str = "ssh: connect failed") -> None:
+        self._message = message
+        self.calls: list[list[str]] = []
+
+    def __call__(self, args: list[str]) -> AsyncIterator[str]:
+        self.calls.append(args)
+        return _aiter_raise(self._message)
+
+
 # ---------------------------------------------------------------------------
 # Mode resolution
 # ---------------------------------------------------------------------------
@@ -261,3 +283,66 @@ class TestPollFile:
         # first connection backfills the last N lines; a reconnect does not
         assert stream.calls[0][-1] == "tail -n 1000 -F /var/log/app.log"
         assert stream.calls[1][-1] == "tail -n 0 -F /var/log/app.log"
+
+
+# ---------------------------------------------------------------------------
+# Initial-connect failure surfaces to the caller
+# ---------------------------------------------------------------------------
+
+
+class TestPollConnectFailure:
+    """If the very first ssh stream fails, ``poll()`` must propagate the
+    error instead of silently looping forever in the reconnect path.
+
+    A later failure (after at least one successful connection) is meant to
+    trigger the silent retry — only the *first* connection escalates."""
+
+    async def test_initial_connect_failure_surfaces_journald(self):
+        stream = _FailingStreamRunner("ssh: Permission denied (publickey)")
+        adapter = SSHAdapter(host="web01", use_journald=True, stream_runner=stream)
+
+        with pytest.raises(RuntimeError, match="Permission denied"):
+            async for _ in adapter.poll(interval=0):
+                pass  # pragma: no cover — the first __anext__ raises
+
+    async def test_initial_connect_failure_surfaces_file(self):
+        # The batch sample read (format detection) succeeds; the stream fails.
+        runner = _Runner("seed line\n")
+        stream = _FailingStreamRunner("ssh: Connection timed out")
+        adapter = SSHAdapter(
+            host="web01",
+            path="/var/log/app.log",
+            runner=runner,
+            stream_runner=stream,
+        )
+
+        with pytest.raises(RuntimeError, match="timed out"):
+            async for _ in adapter.poll(interval=0):
+                pass  # pragma: no cover
+
+    async def test_later_connect_failure_does_not_surface(self):
+        """Failures after the first successful connect must be swallowed —
+        the reconnect loop keeps trying. Verifying with a runner that
+        yields once successfully and then raises on the second call."""
+        first_lines = [_jline(message="initial", cursor="c1")]
+
+        class _OnceThenFail:
+            def __init__(self) -> None:
+                self.calls: list[list[str]] = []
+                self._i = 0
+
+            def __call__(self, args: list[str]) -> AsyncIterator[str]:
+                self.calls.append(args)
+                self._i += 1
+                if self._i == 1:
+                    return _ait(first_lines)
+                return _aiter_raise("reconnect failed")
+
+        stream = _OnceThenFail()
+        adapter = SSHAdapter(host="web01", use_journald=True, stream_runner=stream)
+
+        # Pull the one good event then stop — the would-be reconnect failure
+        # must not be raised to us.
+        async for event in adapter.poll(interval=0):
+            assert event.message == "initial"
+            break

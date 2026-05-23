@@ -31,6 +31,26 @@ class _FakePollAdapter:
             )
 
 
+class _FailingMidStream:
+    """A poll() that yields some events and then raises mid-stream."""
+
+    def __init__(self, lines: list[str], error: str = "connection lost") -> None:
+        self._lines = lines
+        self._error = error
+
+    async def poll(self, interval: float):
+        for line in self._lines:
+            yield Event(
+                raw=line,
+                source="fake",
+                message=line,
+                timestamp=None,
+                severity=Severity.INFO,
+                parsed_fields={},
+            )
+        raise RuntimeError(self._error)
+
+
 def _ev(severity: Severity) -> Event:
     return Event(
         raw="x", source="s", message="x", timestamp=None, severity=severity, parsed_fields={}
@@ -75,6 +95,25 @@ class TestTailWorker:
             items.append(q.get_nowait())
         assert [it[0] for it in items] == ["event", "event", "down"]
         assert items[0][2].parsed_fields["target"] == "web01"
+
+    def test_mid_stream_failure_emits_events_then_down_with_error(self):
+        """A target that raises after delivering events must still keep its
+        successful events and surface the error on the queue as a ``down``
+        marker — failure isolation is what keeps the other targets running."""
+        q: queue.Queue = queue.Queue()
+        _tail_worker(
+            "web01",
+            _FailingMidStream(["line one", "line two"], "connection lost"),
+            0.0,
+            q,
+        )
+        items = []
+        while not q.empty():
+            items.append(q.get_nowait())
+        assert [it[0] for it in items] == ["event", "event", "down"]
+        # The error message is forwarded verbatim so the heartbeat / summary
+        # can show why the target dropped out.
+        assert items[2] == ("down", "web01", "connection lost")
 
 
 # ---------------------------------------------------------------------------
