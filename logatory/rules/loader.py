@@ -5,6 +5,8 @@ from pathlib import Path
 import yaml
 
 from ..models import FindingSeverity
+from . import BUILTIN_RULES_DIR
+from .engine import RuleEngine
 from .model import AggregateCondition, MatchCondition, Rule
 
 _LEVEL_MAP = {
@@ -147,3 +149,35 @@ def validate_rule_file(path: Path) -> list[str]:
                 errors.append(f"aggregate: invalid timeframe '{tf}'. Use e.g. 30s, 5m, 1h")
 
     return errors
+
+
+def build_engine(
+    no_rules: bool,
+    rules_dir: Path | None,
+    plugin_registry,
+) -> RuleEngine | None:
+    """Construct a :class:`RuleEngine` from the standard rule sources.
+
+    Combines, in order:
+
+    * the shipped built-in rules under ``BUILTIN_RULES_DIR``
+    * an optional CLI-supplied ``--rules-dir``
+    * any directories the plugin registry exposes via ``rule_dirs``
+    * any in-memory rules the plugin registry exposes via ``rules``
+
+    Returns ``None`` when *no_rules* is True — every CLI command uses
+    that to honour ``--no-rules``.
+
+    ``plugin_registry`` is duck-typed: anything with ``rule_dirs`` and
+    ``rules`` attributes works.  This keeps the rules package free of
+    an import dependency on the plugins package.
+    """
+    if no_rules:
+        return None
+    all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
+    if rules_dir and rules_dir.is_dir():
+        all_rules.extend(load_rules_dir(rules_dir))
+    for pdir in plugin_registry.rule_dirs:
+        all_rules.extend(load_rules_dir(pdir))
+    all_rules.extend(plugin_registry.rules)
+    return RuleEngine(all_rules)

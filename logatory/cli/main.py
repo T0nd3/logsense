@@ -41,8 +41,7 @@ from logatory.pii.patterns import PIIPattern
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import compile_plugin_pii_patterns, load_plugins
 from logatory.rules import BUILTIN_RULES_DIR
-from logatory.rules.engine import RuleEngine
-from logatory.rules.loader import load_rules_dir, validate_rule_file
+from logatory.rules.loader import build_engine, load_rules_dir, validate_rule_file
 from logatory.rules.sigma import SigmaConversionError, load_sigma_file
 from logatory.storage.baseline_repo import BaselineRepository
 from logatory.storage.dismiss_repo import DismissRepository
@@ -173,15 +172,7 @@ def scan(
     redactor = _make_redactor(cfg, REDACT_MAP[redact], plugin_pii=plugin_pii or None)
 
     # Load rules (built-in + CLI --rules-dir + plugins)
-    engine: RuleEngine | None = None
-    if not no_rules:
-        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
-        if rules_dir and rules_dir.is_dir():
-            all_rules.extend(load_rules_dir(rules_dir))
-        for pdir in plugin_registry.rule_dirs:
-            all_rules.extend(load_rules_dir(pdir))
-        all_rules.extend(plugin_registry.rules)
-        engine = RuleEngine(all_rules)
+    engine = build_engine(no_rules, rules_dir, plugin_registry)
 
     # These lists are populated inside _run() and read afterwards
     events: list[Event] = []

@@ -16,9 +16,7 @@ from logatory.errors.tracker import ErrorTracker
 from logatory.models import Event, Finding
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import compile_plugin_pii_patterns, load_plugins
-from logatory.rules import BUILTIN_RULES_DIR
-from logatory.rules.engine import RuleEngine
-from logatory.rules.loader import load_rules_dir
+from logatory.rules.loader import build_engine
 from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
@@ -65,15 +63,7 @@ def docker_scan(
         additional=plugin_pii or None,
     )
 
-    engine: RuleEngine | None = None
-    if not no_rules:
-        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
-        if rules_dir and rules_dir.is_dir():
-            all_rules.extend(load_rules_dir(rules_dir))
-        for pdir in plugin_registry.rule_dirs:
-            all_rules.extend(load_rules_dir(pdir))
-        all_rules.extend(plugin_registry.rules)
-        engine = RuleEngine(all_rules)
+    engine = build_engine(no_rules, rules_dir, plugin_registry)
 
     events: list[Event] = []
     findings: list[Finding] = []
@@ -200,15 +190,7 @@ def docker_tail(
         additional=plugin_pii or None,
     )
 
-    engine: RuleEngine | None = None
-    if not no_rules:
-        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
-        if rules_dir and rules_dir.is_dir():
-            all_rules.extend(load_rules_dir(rules_dir))
-        for pdir in plugin_registry.rule_dirs:
-            all_rules.extend(load_rules_dir(pdir))
-        all_rules.extend(plugin_registry.rules)
-        engine = RuleEngine(all_rules)
+    engine = build_engine(no_rules, rules_dir, plugin_registry)
 
     sep = "-" * 60
     typer.echo(f"\n{sep}")
