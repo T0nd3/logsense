@@ -18,14 +18,13 @@ from logatory.config import Config
 from logatory.errors.tracker import ErrorTracker
 from logatory.models import Event, Finding
 from logatory.pii.redactor import PIIRedactor, RedactMode
+from logatory.rules import BUILTIN_RULES_DIR
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir
 from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
 from logatory.tail_helpers import meets_alert_severity, post_webhook
-
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(help="Query logs from an OpenSearch / Elasticsearch cluster.")
 
@@ -124,7 +123,7 @@ def opensearch_scan(
 
     engine: RuleEngine | None = None
     if not no_rules:
-        all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
         engine = RuleEngine(all_rules)
@@ -289,7 +288,7 @@ def opensearch_tail(
 
     engine: RuleEngine | None = None
     if not no_rules:
-        all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
         engine = RuleEngine(all_rules)

@@ -11,9 +11,9 @@ from fastapi.templating import Jinja2Templates
 
 from logatory import __version__
 from logatory.config import Config
+from logatory.rules import BUILTIN_RULES_DIR
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[type-arg]
     from logatory.rules.loader import load_rules_dir
 
     cfg: Config = app.state.config
-    rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+    rules = list(load_rules_dir(BUILTIN_RULES_DIR))
 
     plugin_registry = load_plugins(cfg.plugins_dir)
     for pdir in plugin_registry.rule_dirs:

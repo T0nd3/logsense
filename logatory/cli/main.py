@@ -41,6 +41,7 @@ from logatory.parsers.detector import FormatDetector
 from logatory.pii.patterns import PIIPattern
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import load_plugins
+from logatory.rules import BUILTIN_RULES_DIR
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir, validate_rule_file
 from logatory.rules.sigma import SigmaConversionError, load_sigma_file
@@ -48,8 +49,6 @@ from logatory.storage.baseline_repo import BaselineRepository
 from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
-
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
 
 app = typer.Typer(name="logatory", help="Logatory — local log analysis with LLM support.")
 app.command("tail")(tail_cmd.tail_watch)
@@ -184,7 +183,7 @@ def scan(
     # Load rules (built-in + CLI --rules-dir + plugins)
     engine: RuleEngine | None = None
     if not no_rules:
-        all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
         for pdir in plugin_registry.rule_dirs:
@@ -432,7 +431,7 @@ def rules_list(
     rules_dir: Annotated[Optional[Path], typer.Option("--rules-dir")] = None,
 ) -> None:
     """List all loaded detection rules."""
-    all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+    all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
     if rules_dir and rules_dir.is_dir():
         all_rules.extend(load_rules_dir(rules_dir))
 

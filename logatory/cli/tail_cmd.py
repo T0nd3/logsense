@@ -24,15 +24,13 @@ from logatory.models import Finding
 from logatory.pii.patterns import PIIPattern
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import load_plugins
+from logatory.rules import BUILTIN_RULES_DIR
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir
 from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
 from logatory.tail_helpers import meets_alert_severity, post_webhook
-
-_BUILTIN_RULES_DIR = Path(__file__).parent.parent / "rules" / "builtin"
-
 
 # ---------------------------------------------------------------------------
 # Public entry point (registered on the main Typer app by main.py)
@@ -99,7 +97,7 @@ def tail_watch(
 
     engine: RuleEngine | None = None
     if not no_rules:
-        all_rules = list(load_rules_dir(_BUILTIN_RULES_DIR))
+        all_rules = list(load_rules_dir(BUILTIN_RULES_DIR))
         if rules_dir and rules_dir.is_dir():
             all_rules.extend(load_rules_dir(rules_dir))
         for pdir in plugin_registry.rule_dirs:
