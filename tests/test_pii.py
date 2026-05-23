@@ -13,6 +13,11 @@ def mask_redactor():
     return PIIRedactor(salt="test-salt-123", mode=RedactMode.MASK)
 
 
+@pytest.fixture
+def dry_run_redactor():
+    return PIIRedactor(salt="test-salt-123", mode=RedactMode.DRY_RUN)
+
+
 class TestPIIRedactor:
     def test_email_redacted(self, redactor):
         result = redactor.redact("User ben@example.com logged in")
@@ -65,3 +70,21 @@ class TestPIIRedactor:
         assert "ben@example.com" not in result.text
         assert "10.0.0.1" not in result.text
         assert len(result.hits) == 2
+
+
+class TestDryRunMode:
+    """DRY_RUN reports matches but leaves the input text unchanged."""
+
+    def test_text_is_unchanged(self, dry_run_redactor):
+        original = "User ben@example.com from 10.0.0.1 logged in"
+        result = dry_run_redactor.redact(original)
+        assert result.text == original
+
+    def test_hits_still_recorded(self, dry_run_redactor):
+        result = dry_run_redactor.redact("User ben@example.com from 10.0.0.1 logged in")
+        assert len(result.hits) == 2
+
+    def test_no_pii_no_hits(self, dry_run_redactor):
+        result = dry_run_redactor.redact("Server started successfully on port 8080")
+        assert result.text == "Server started successfully on port 8080"
+        assert result.hits == []

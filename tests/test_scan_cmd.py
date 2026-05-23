@@ -277,9 +277,11 @@ class TestScanRedactModes:
         _, cfg = _cfg_file(tmp_path)
         result = runner.invoke(app, ["scan", str(log), "--redact", "dry-run"] + cfg)
         assert result.exit_code == 0
-        # dry-run still replaces PII in the display but reports hits with mode label
+        # dry-run reports hits with the mode label but leaves the original
+        # text unchanged — that is the whole point of the mode
         assert "dry-run" in result.output
         assert "PII hits" in result.output
+        assert "192.168.1.42" in result.output
 
 
 # ---------------------------------------------------------------------------

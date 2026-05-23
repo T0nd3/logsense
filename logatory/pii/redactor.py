@@ -78,6 +78,10 @@ class PIIRedactor:
         return RedactionResult(text=result, hits=hits)
 
     def _replacement(self, value: str, prefix: str) -> str:
+        # DRY_RUN: keep the original text intact — only the hit is recorded.
+        # Callers use len(result.hits) to count what *would* be redacted.
+        if self.mode == RedactMode.DRY_RUN:
+            return value
         if self.mode == RedactMode.MASK:
             return f"<{prefix.upper()}>"
         h = hmac.new(self._salt, value.encode(), hashlib.sha256).hexdigest()[:8]
