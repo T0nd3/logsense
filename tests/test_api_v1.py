@@ -192,6 +192,41 @@ class TestAuth:
 
 
 # ===========================================================================
+# Principal abstraction (forward-compatibility hook for multi-user mode)
+# ===========================================================================
+
+
+class TestPrincipal:
+    """Validate the Principal dataclass — kept stable so future kinds
+    (user / tenant) can extend it without breaking the OSS contract."""
+
+    def test_anonymous_is_not_authenticated(self) -> None:
+        from logatory.web.auth import Principal
+
+        assert Principal(kind="anonymous").is_authenticated is False
+
+    def test_api_token_is_authenticated(self) -> None:
+        from logatory.web.auth import Principal
+
+        assert Principal(kind="api_token").is_authenticated is True
+
+    def test_future_user_kind_is_authenticated(self) -> None:
+        """Any non-anonymous kind counts as authenticated."""
+        from logatory.web.auth import Principal
+
+        p = Principal(kind="user", user_id=42, tenant_id=1)
+        assert p.is_authenticated is True
+
+    def test_user_and_tenant_default_to_none(self) -> None:
+        """OSS principals never carry user_id / tenant_id."""
+        from logatory.web.auth import Principal
+
+        p = Principal(kind="anonymous")
+        assert p.user_id is None
+        assert p.tenant_id is None
+
+
+# ===========================================================================
 # GET /api/v1/findings
 # ===========================================================================
 
