@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import gzip
-import re
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -40,7 +39,7 @@ from logatory.models import Event, Finding
 from logatory.parsers.detector import FormatDetector
 from logatory.pii.patterns import PIIPattern
 from logatory.pii.redactor import PIIRedactor
-from logatory.plugins.loader import load_plugins
+from logatory.plugins.loader import compile_plugin_pii_patterns, load_plugins
 from logatory.rules import BUILTIN_RULES_DIR
 from logatory.rules.engine import RuleEngine
 from logatory.rules.loader import load_rules_dir, validate_rule_file
@@ -170,14 +169,7 @@ def scan(
 
     # Load plugins first so their PII patterns are available to the redactor
     plugin_registry = load_plugins(cfg.plugins_dir)
-    plugin_pii = [
-        PIIPattern(
-            name=p["name"],
-            pattern=re.compile(p["pattern"]),
-            prefix=p["prefix"],
-        )
-        for p in plugin_registry.pii_patterns
-    ]
+    plugin_pii = compile_plugin_pii_patterns(plugin_registry)
     redactor = _make_redactor(cfg, REDACT_MAP[redact], plugin_pii=plugin_pii or None)
 
     # Load rules (built-in + CLI --rules-dir + plugins)

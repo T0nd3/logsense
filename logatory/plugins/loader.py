@@ -4,11 +4,32 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import re
 from pathlib import Path
+
+from logatory.pii.patterns import PIIPattern
 
 from .registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def compile_plugin_pii_patterns(registry: PluginRegistry) -> list[PIIPattern]:
+    """Compile a plugin registry's raw PII pattern entries into ``PIIPattern``
+    objects ready for the redactor.
+
+    Registries store PII patterns as ``{"name", "pattern", "prefix"}`` dicts
+    so plugin authors don't have to import the model class.  Every CLI
+    entrypoint that wires up the redactor needs this one-step conversion.
+    """
+    return [
+        PIIPattern(
+            name=p["name"],
+            pattern=re.compile(p["pattern"]),
+            prefix=p["prefix"],
+        )
+        for p in registry.pii_patterns
+    ]
 
 
 def load_plugins(plugins_dir: Path | None) -> PluginRegistry:
