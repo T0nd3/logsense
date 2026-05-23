@@ -13,12 +13,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from logatory.models import Finding
 
-_SEV_ORDER: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
-
 
 def meets_alert_severity(finding: Finding, min_severity: str) -> bool:
-    """Return True if finding.severity >= min_severity."""
-    return _SEV_ORDER.get(finding.severity.value, 0) >= _SEV_ORDER.get(min_severity.lower(), 2)
+    """Return True if finding.severity >= min_severity.
+
+    Unknown *min_severity* strings fall back to "high" (level 2)."""
+    from logatory.models import finding_severity_level
+
+    return finding.severity.level >= finding_severity_level(min_severity, default=2)
 
 
 def post_webhook(url: str, finding: Finding) -> None:

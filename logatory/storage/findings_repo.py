@@ -4,19 +4,18 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from logatory.models import Finding
+from logatory.models import Finding, finding_severity_level
 
 from .errors_schema import ERRORS_SCHEMA_SQL
 from .findings_schema import FINDINGS_SCHEMA_SQL
 from .schema import SCHEMA_SQL, ensure_column
 
-# Severity order for min-severity filtering
-_SEV_ORDER: dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
-
 
 def meets_min_severity(finding: Finding, min_severity: str) -> bool:
-    """Return True if the finding's severity is >= min_severity."""
-    return _SEV_ORDER.get(finding.severity.value, 0) >= _SEV_ORDER.get(min_severity, 2)
+    """Return True if the finding's severity is >= min_severity.
+
+    Unknown *min_severity* strings fall back to "high" (level 2)."""
+    return finding.severity.level >= finding_severity_level(min_severity, default=2)
 
 
 class FindingsRepository:

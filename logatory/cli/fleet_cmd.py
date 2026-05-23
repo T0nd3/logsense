@@ -32,7 +32,7 @@ from logatory.fleet import (
     load_targets,
     select_targets,
 )
-from logatory.models import Event, Finding
+from logatory.models import Event, Finding, Severity
 from logatory.pii.patterns import PIIPattern
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import load_plugins
@@ -53,9 +53,6 @@ _SEVERITY_COLOR = {
     "high": typer.colors.RED,
     "critical": typer.colors.BRIGHT_RED,
 }
-
-# Event-severity ordering for the `fleet tail --min-severity` filter.
-_EVENT_SEV_ORDER = {"debug": 0, "info": 1, "warning": 2, "error": 3, "critical": 4}
 
 
 @app.callback()
@@ -290,7 +287,7 @@ def _event_visible(event: Event, show_events: bool, min_threshold: Optional[int]
         return True
     if min_threshold is None:
         return False
-    return _EVENT_SEV_ORDER.get(event.severity.value, 0) >= min_threshold
+    return event.severity.level >= min_threshold
 
 
 def _print_event(event: Event) -> None:
@@ -384,10 +381,11 @@ def fleet_tail(
     """
     min_threshold: Optional[int] = None
     if min_severity is not None:
-        min_threshold = _EVENT_SEV_ORDER.get(min_severity.lower())
-        if min_threshold is None:
+        try:
+            min_threshold = Severity(min_severity.lower()).level
+        except ValueError:
             raise typer.BadParameter(
-                f"--min-severity must be one of: {', '.join(_EVENT_SEV_ORDER)}"
+                f"--min-severity must be one of: {', '.join(s.value for s in Severity)}"
             )
 
     try:

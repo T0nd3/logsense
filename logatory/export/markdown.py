@@ -9,11 +9,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from logatory.models import FindingSeverity
 from logatory.storage.errors_repo import ErrorsRepository
 from logatory.storage.findings_repo import FindingsRepository
 
-# Severity display order (most critical first)
-_SEV_ORDER = ["critical", "high", "medium", "low"]
+# Severity display order (most critical first) — derived from the enum so
+# new severities pick up automatically when added in models.py.
+_SEV_ORDER: list[str] = [s.value for s in sorted(FindingSeverity, key=lambda x: -x.level)]
 
 
 def _md_table(headers: list[str], rows: list[list[str]]) -> str:

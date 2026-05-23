@@ -159,7 +159,6 @@ def _explain_prompt(rule_id: str, severity: str, message: str, source: str) -> s
 # ---------------------------------------------------------------------------
 
 _MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
-_SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 
 @router.post("/upload", response_class=HTMLResponse)
@@ -258,8 +257,10 @@ async def api_upload(
                         }
                     )
 
-        # Sort findings: critical → high → medium → low
-        findings_out.sort(key=lambda f: _SEV_ORDER.get(f["severity"], 9))
+        # Sort findings: critical → high → medium → low (unknowns last)
+        from logatory.models import finding_severity_level
+
+        findings_out.sort(key=lambda f: -finding_severity_level(f["severity"], default=-9))
 
         return templates.TemplateResponse(
             request,
