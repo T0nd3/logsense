@@ -9,6 +9,7 @@ from typing import Annotated, Optional
 import typer
 
 from logatory.adapters.ssh import SSHAdapter
+from logatory.cli._pipeline import run_tail_pipeline
 from logatory.cli._types import REDACT_MAP, RedactModeArg
 from logatory.cli.colors import SEVERITY_COLOR
 from logatory.config import Config
@@ -17,10 +18,7 @@ from logatory.models import Event, Finding
 from logatory.pii.redactor import PIIRedactor
 from logatory.plugins.loader import compile_plugin_pii_patterns, load_plugins
 from logatory.rules.loader import build_engine
-from logatory.storage.dismiss_repo import DismissRepository
 from logatory.storage.errors_repo import ErrorsRepository
-from logatory.storage.findings_repo import FindingsRepository, meets_min_severity
-from logatory.tail_helpers import meets_alert_severity, post_webhook
 
 app = typer.Typer(help="Analyze logs from a remote host over SSH.")
 
@@ -243,22 +241,6 @@ def ssh_tail(
     counts = {"events": 0, "findings": 0, "pii": 0, "errors": 0, "webhooks": 0}
 
     async def _run() -> None:
-        e_repo: ErrorsRepository | None = None
-        tracker: ErrorTracker | None = None
-        f_repo: FindingsRepository | None = None
-        d_repo: DismissRepository | None = None
-
-        if track_errors:
-            e_repo = ErrorsRepository(cfg.db_path)
-            e_repo.open()
-            tracker = ErrorTracker(e_repo)
-        if track_findings:
-            f_repo = FindingsRepository(cfg.db_path)
-            f_repo.open()
-        if engine:
-            d_repo = DismissRepository(cfg.db_path)
-            d_repo.open()
-
         adapter = SSHAdapter(
             host=host,
             path=path,
@@ -269,35 +251,18 @@ def ssh_tail(
             identity=identity,
             ssh_opts=ssh_opt,
         )
-        try:
-            async for event in adapter.poll(reconnect_delay):
-                result = redactor.redact(event.message)
-                event.message = result.text
-                event.raw = redactor.redact(event.raw).text
-                counts["pii"] += len(result.hits)
-                counts["events"] += 1
-
-                if engine:
-                    for finding in engine.process(event):
-                        if d_repo and d_repo.is_dismissed(finding.rule_id, finding.source):
-                            continue
-                        _print_finding(finding)
-                        counts["findings"] += 1
-                        if alert_webhook and meets_alert_severity(finding, alert_min_severity):
-                            post_webhook(alert_webhook, finding)
-                            counts["webhooks"] += 1
-                        if f_repo and meets_min_severity(finding, cfg.findings_min_severity):
-                            f_repo.add_findings([finding])
-
-                if tracker and tracker.process(event) is not None:
-                    counts["errors"] += 1
-        finally:
-            if e_repo:
-                e_repo.close()
-            if f_repo:
-                f_repo.close()
-            if d_repo:
-                d_repo.close()
+        await run_tail_pipeline(
+            event_stream=adapter.poll(reconnect_delay),
+            redactor=redactor,
+            engine=engine,
+            counts=counts,
+            cfg=cfg,
+            print_finding=_print_finding,
+            track_errors=track_errors,
+            track_findings=track_findings,
+            alert_webhook=alert_webhook,
+            alert_min_severity=alert_min_severity,
+        )
 
     try:
         asyncio.run(_run())
